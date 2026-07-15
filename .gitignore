@@ -1,0 +1,17 @@
+# Local Claude Code settings
+.claude/settings.local.json
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Collected datasets and trained models (large, regenerable)
+data/
+models/*.pt
+models/*.joblib
+
+# OS noise
+Thumbs.db
+.DS_Store
