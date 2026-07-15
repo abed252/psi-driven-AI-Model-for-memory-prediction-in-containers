@@ -1,0 +1,8 @@
+# Example configuration for environment probing (Phase 0).
+# Values shown are the defaults built into the code; copy and edit as needed.
+probe:
+  image: alpine:3.20        # image used for temporary probe/sidecar containers
+  memory_limit: 256m        # limit given to the temporary target container
+  num_samples: 5            # sidecar samples taken during validation
+  interval_s: 1.0           # sampling interval (seconds)
+reports_dir: artifacts/reports

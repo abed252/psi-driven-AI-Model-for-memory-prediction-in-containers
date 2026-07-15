@@ -1,0 +1,157 @@
+{
+  "validation_id": "4167fbed30ae",
+  "created_at": "2026-07-15T22:23:00",
+  "overall": "pass",
+  "checks": [
+    {
+      "name": "host.os",
+      "status": "pass",
+      "details": "Windows 10 (10.0.26200)",
+      "data": {
+        "system": "Windows",
+        "release": "10"
+      }
+    },
+    {
+      "name": "host.python",
+      "status": "pass",
+      "details": "Python 3.11.9",
+      "data": {
+        "version": "3.11.9"
+      }
+    },
+    {
+      "name": "docker.version",
+      "status": "pass",
+      "details": "client 29.5.2, server 29.5.2",
+      "data": {
+        "client": "29.5.2",
+        "server": "29.5.2"
+      }
+    },
+    {
+      "name": "docker.context",
+      "status": "pass",
+      "details": "active context: desktop-linux",
+      "data": {
+        "context": "desktop-linux"
+      }
+    },
+    {
+      "name": "docker.cgroup_version",
+      "status": "pass",
+      "details": "cgroup v2 (driver: cgroupfs)",
+      "data": {
+        "cgroup_version": "2",
+        "driver": "cgroupfs"
+      }
+    },
+    {
+      "name": "docker.vm",
+      "status": "pass",
+      "details": "kernel 6.6.87.1-microsoft-standard-WSL2, 16 CPUs, 7.4 GiB VM memory",
+      "data": {
+        "kernel": "6.6.87.1-microsoft-standard-WSL2",
+        "ncpu": 16,
+        "mem_total_bytes": 7984070656
+      }
+    },
+    {
+      "name": "vm.psi_global",
+      "status": "pass",
+      "details": "/proc/pressure/memory present and parseable",
+      "data": {}
+    },
+    {
+      "name": "vm.swap",
+      "status": "pass",
+      "details": "VM swap total 2.0 GiB",
+      "data": {
+        "swap_total_bytes": 2147483648
+      }
+    },
+    {
+      "name": "container.started",
+      "status": "pass",
+      "details": "temp container psi-probe-cbd84231 (2451100614a7)",
+      "data": {}
+    },
+    {
+      "name": "container.readable_files",
+      "status": "pass",
+      "details": "readable from inside container: memory.current, memory.max, memory.high, memory.swap.current, memory.swap.max, memory.pressure, memory.events, memory.stat",
+      "data": {
+        "readable": [
+          "memory.current",
+          "memory.max",
+          "memory.high",
+          "memory.swap.current",
+          "memory.swap.max",
+          "memory.pressure",
+          "memory.events",
+          "memory.stat"
+        ],
+        "missing": []
+      }
+    },
+    {
+      "name": "container.psi",
+      "status": "pass",
+      "details": "per-container PSI parseable (some avg10=0.0)",
+      "data": {}
+    },
+    {
+      "name": "container.swap",
+      "status": "pass",
+      "details": "memory.swap.max = 268435456",
+      "data": {}
+    },
+    {
+      "name": "container.sidecar_sampling",
+      "status": "pass",
+      "details": "5/5 samples via privileged sidecar, monotonic timestamps: True, memory.current ~372736 B",
+      "data": {
+        "num_samples": 5,
+        "monotonic": true,
+        "currents": [
+          372736,
+          372736,
+          372736,
+          372736,
+          372736
+        ],
+        "psi_some_avg10": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    },
+    {
+      "name": "container.dynamic_memory_max",
+      "status": "pass",
+      "details": "docker update changed memory.max 268435456 -> 536870912 without restart",
+      "data": {
+        "before": 268435456,
+        "after": 536870912
+      }
+    },
+    {
+      "name": "container.memory_high_write",
+      "status": "pass",
+      "details": "sidecar wrote memory.high=134217728, restored to max",
+      "data": {
+        "written": 134217728,
+        "restored": "max"
+      }
+    },
+    {
+      "name": "docker_desktop.limitations",
+      "status": "warn",
+      "details": "Containers run inside Docker Desktop's WSL2 utility VM, not on the Windows host: (1) global /proc/pressure reflects the VM, not Windows; (2) VM RAM/swap are capped by Docker Desktop settings; (3) host-tree cgroup access needs a privileged sidecar with --cgroupns=host, target path /sys/fs/cgroup/docker/<container-id>/; (4) per-sample `docker exec` from Windows costs ~100-300 ms, so sampling loops must run inside the VM; (5) bind mounts from Windows paths are slow and this project's path contains non-ASCII characters \u2014 prefer stdout/`docker cp` for moving data out of containers.",
+      "data": {}
+    }
+  ]
+}

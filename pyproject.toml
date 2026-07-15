@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "psi-memory"
+version = "0.1.0"
+description = "PSI-driven prediction of container memory demand for proactive cgroup sizing (Technion 236502 AI project)"
+requires-python = ">=3.11"
+dependencies = [
+    "rich>=13.7",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+
+[project.scripts]
+psi-validate-env = "psi_memory.cli:main_validate_env"
+psi-version-report = "psi_memory.cli:main_version_report"
+psi-smoke = "psi_memory.cli:main_smoke"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "docker: requires a running Docker Desktop daemon (deselect with -m 'not docker')",
+]
+addopts = "-ra"
