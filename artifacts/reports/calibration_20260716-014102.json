@@ -1,0 +1,137 @@
+{
+  "created": "2026-07-16T01:41:02",
+  "batch_manifest": "data\\raw\\batch_20260716-012617.json",
+  "overall_pass": true,
+  "runs": [
+    {
+      "run_id": "steady-20260716-012004-c0cdf8",
+      "workload": "steady",
+      "passed": true,
+      "checks": [
+        {
+          "name": "has_samples",
+          "passed": true,
+          "details": "60 samples"
+        },
+        {
+          "name": "psi_near_zero",
+          "passed": true,
+          "details": "peak some.avg10=0.00%, stall=0us"
+        },
+        {
+          "name": "no_oom",
+          "passed": true,
+          "details": "oom_observed=False"
+        }
+      ],
+      "plot": "artifacts\\plots\\calibration\\steady-20260716-012004-c0cdf8.png",
+      "peak_some_avg10": 0.0,
+      "stall_delta_us": 0,
+      "oom_observed": false
+    },
+    {
+      "run_id": "file_burst-20260716-012106-9cba6f",
+      "workload": "file_burst",
+      "passed": true,
+      "checks": [
+        {
+          "name": "has_samples",
+          "passed": true,
+          "details": "61 samples"
+        },
+        {
+          "name": "usage_high",
+          "passed": true,
+          "details": "peak usage 85% of limit"
+        },
+        {
+          "name": "psi_low",
+          "passed": true,
+          "details": "peak some.avg10=0.00%"
+        },
+        {
+          "name": "no_oom",
+          "passed": true,
+          "details": "oom_observed=False"
+        }
+      ],
+      "plot": "artifacts\\plots\\calibration\\file_burst-20260716-012106-9cba6f.png",
+      "peak_some_avg10": 0.0,
+      "stall_delta_us": 0,
+      "oom_observed": false
+    },
+    {
+      "run_id": "leak-20260716-012209-047164",
+      "workload": "leak",
+      "passed": true,
+      "checks": [
+        {
+          "name": "has_samples",
+          "passed": true,
+          "details": "46 samples"
+        },
+        {
+          "name": "psi_rises",
+          "passed": true,
+          "details": "peak some.avg10=5.47%, stall=1282492us"
+        },
+        {
+          "name": "oom_detected",
+          "passed": true,
+          "details": "oom_observed=True (flag=True, events at t=[])"
+        }
+      ],
+      "plot": "artifacts\\plots\\calibration\\leak-20260716-012209-047164.png",
+      "peak_some_avg10": 5.47,
+      "stall_delta_us": 1282492,
+      "oom_observed": true
+    },
+    {
+      "run_id": "bursty-20260716-012257-69f5d2",
+      "workload": "bursty",
+      "passed": true,
+      "checks": [
+        {
+          "name": "has_samples",
+          "passed": true,
+          "details": "96 samples"
+        },
+        {
+          "name": "usage_oscillates",
+          "passed": true,
+          "details": "10 large swings"
+        },
+        {
+          "name": "psi_active",
+          "passed": true,
+          "details": "peak some.avg10=3.58%, stall=2473569us"
+        }
+      ],
+      "plot": "artifacts\\plots\\calibration\\bursty-20260716-012257-69f5d2.png",
+      "peak_some_avg10": 3.58,
+      "stall_delta_us": 2473569,
+      "oom_observed": false
+    },
+    {
+      "run_id": "trace_replay-20260716-012435-4582e0",
+      "workload": "trace_replay",
+      "passed": true,
+      "checks": [
+        {
+          "name": "has_samples",
+          "passed": true,
+          "details": "100 samples"
+        },
+        {
+          "name": "tracks_trace",
+          "passed": true,
+          "details": "correlation=1.000"
+        }
+      ],
+      "plot": "artifacts\\plots\\calibration\\trace_replay-20260716-012435-4582e0.png",
+      "peak_some_avg10": 0.0,
+      "stall_delta_us": 0,
+      "oom_observed": false
+    }
+  ]
+}

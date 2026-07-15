@@ -1,0 +1,15 @@
+# Workload + sampler image. Built from the repo root:
+#   docker build -f docker/Dockerfile.workloads -t psi-workloads:latest .
+# Stdlib-only scripts, so a slim Python base suffices for both the workload
+# containers and the privileged sampler sidecar.
+FROM python:3.11-alpine
+
+# Unbuffered stdout so sampler lines and workload logs stream immediately.
+ENV PYTHONUNBUFFERED=1
+
+WORKDIR /app
+COPY workloads/*.py /app/
+COPY workloads/traces/ /app/traces/
+
+# No ENTRYPOINT: each run supplies its own command, e.g.
+#   python /app/leak.py --step-mib 8 --seed 42

@@ -10,6 +10,7 @@ requires-python = ">=3.11"
 dependencies = [
     "rich>=13.7",
     "pyyaml>=6.0",
+    "matplotlib>=3.8",
 ]
 
 [project.optional-dependencies]
@@ -21,6 +22,9 @@ dev = [
 psi-validate-env = "psi_memory.cli:main_validate_env"
 psi-version-report = "psi_memory.cli:main_version_report"
 psi-smoke = "psi_memory.cli:main_smoke"
+psi-run = "psi_memory.cli:main_run"
+psi-dashboard = "psi_memory.cli:main_dashboard"
+psi-calibrate = "psi_memory.cli:main_calibrate"
 
 [tool.setuptools.packages.find]
 where = ["src"]

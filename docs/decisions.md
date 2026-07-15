@@ -77,5 +77,54 @@ engineering (spec requirement).
 ## D8 — Environment reports carry a stable `validation_id`
 
 Each `psi-validate-env` run saves JSON with a content-hash ID; Phase 1 run
-metadata will reference it so every dataset row is traceable to the validated
-environment it was collected under.
+metadata references it (`env_validation_id`) so every dataset row is
+traceable to the validated environment it was collected under.
+
+## D9 — Raw run data is JSON Lines streamed over stdout (Phase 1, 2026-07-16)
+
+The sampler sidecar emits one JSON object per sample on stdout; the host
+streams it into `data/raw/<run_id>/samples.jsonl` with per-line flushes.
+Rationale: (a) implements D4 — no Windows bind mounts; (b) preserves *all*
+raw fields (`memory.stat` has ~50 keys that vary by kernel; a fixed CSV
+schema would drop or zero them, violating the no-silent-zero rule); (c) a
+crash loses at most one line. The Phase 2 dataset builder converts JSONL to
+feature tables; raw files stay immutable.
+
+## D10 — One image serves workloads, sampler, and sidecar writes
+
+`psi-workloads:latest` (python:3.11-alpine + stdlib-only scripts) is used for
+workload containers, the sampler sidecar, and the dashboard's stream. One
+image digest in run metadata pins everything that ran; no version skew
+between workload and collector.
+
+## D11 — Workload scripts are standalone stdlib files, not package modules
+
+`workloads/*.py` import only the stdlib and their sibling `wl_common.py`, so
+the container needs no pip install and the image builds in seconds. Host-side
+unit tests load them via importlib with the directory on sys.path — the same
+layout they see inside the image at /app.
+
+## D12 — Pressure needs allocation + re-touching, and swap-backed limits
+
+Simply allocating past `memory.max` gets a container OOM-killed with PSI
+still ~0. The leak/bursty workloads therefore (a) run with
+`--memory-swap` > `--memory` so the kernel swaps instead of killing
+immediately, and (b) re-touch previously allocated chunks every tick, forcing
+refaults of swapped-out pages — the stalls PSI actually measures. Python's
+`bytearray(n)` gets uncommitted zero-pages, so every page is written on
+allocation and on touch (see `wl_common.py`).
+
+## D13 — OOM detection uses docker's flag OR memory.events
+
+`docker inspect .State.OOMKilled` misses OOM kills of child processes and
+`memory.events` counters miss nothing but require the collector to have
+sampled in time. Run metadata records both (`oom_killed_flag`,
+`final_memory_events`) and derives `oom_observed` as their OR.
+
+## D14 — Calibration thresholds
+
+"Near zero" PSI = some.avg10 < 1% and < 0.2 s cumulative stall; "low" < 5%;
+"genuine pressure" ≥ 5% avg10 or ≥ 1 s cumulative stall. These are recorded
+in `environment/calibration.py` and in the calibration report so later phases
+can revisit them; they are calibration gates, not scientific claims.
+

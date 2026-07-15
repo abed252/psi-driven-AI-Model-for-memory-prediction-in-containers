@@ -1,0 +1,12 @@
+# Synthetic example trace for trace_replay.py (offset_s,target_mib)
+# Shape: ramp -> plateau -> spike -> decay -> low tail
+0,10
+10,60
+20,80
+35,80
+40,170
+50,180
+55,60
+70,40
+85,25
+100,10

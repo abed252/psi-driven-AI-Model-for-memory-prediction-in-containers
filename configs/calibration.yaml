@@ -1,0 +1,44 @@
+# Fast calibration batch (~7 minutes total): one run per workload with
+# parameters chosen to demonstrate the proposal's expected PSI signatures.
+#   psi-run --config configs/calibration.yaml
+#   psi-calibrate
+defaults:
+  base_seed: 42
+  interval_s: 1.0
+  image: psi-workloads:latest
+
+runs:
+  # Healthy baseline: comfortable working set, PSI must stay ~0.
+  - workload: steady
+    duration_s: 60
+    memory_limit: 256m
+    memory_swap: 512m
+    params: {working_set_mib: 64, churn_mib: 4}
+
+  # High usage from reclaimable page cache, PSI must stay low.
+  - workload: file_burst
+    duration_s: 60
+    memory_limit: 256m
+    memory_swap: 512m
+    params: {file_mib: 200, pause_s: 1.0}
+
+  # Constrained anonymous leak: PSI must rise, then an OOM kill.
+  - workload: leak
+    duration_s: 90
+    memory_limit: 192m
+    memory_swap: 384m
+    params: {step_mib: 8, tick_s: 1.0, retouch_fraction: 0.3}
+
+  # Bursts above the limit with idle gaps: usage and PSI oscillate.
+  - workload: bursty
+    duration_s: 96
+    memory_limit: 192m
+    memory_swap: 384m
+    params: {burst_mib: 200, hold_s: 8, idle_s: 8}
+
+  # Synthetic trace replay: usage must track the trace shape.
+  - workload: trace_replay
+    duration_s: 100
+    memory_limit: 320m
+    memory_swap: 640m
+    params: {trace_file: /app/traces/example_trace.csv, scale: 1.0}

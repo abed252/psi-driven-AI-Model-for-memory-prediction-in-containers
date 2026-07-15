@@ -7,10 +7,10 @@ Course 236502 — Project in Artificial Intelligence, Technion.
 Proposal: [`docs/proposal/PROPOSAL_document_v2.pdf`](docs/proposal/PROPOSAL_document_v2.pdf)
 · Execution contract: [`docs/PROJECT_EXECUTION_SPEC.md`](docs/PROJECT_EXECUTION_SPEC.md)
 
-**Status: Phase 0 complete** — repository foundation, environment validation,
-and a verified per-container PSI/memory collection path on Docker Desktop.
-Later phases (workloads, collector, dataset, models, controller, evaluation)
-are described in the execution spec and not yet implemented.
+**Status: Phase 1 complete** — workloads, collector, dashboard, and PSI
+calibration, on top of the Phase 0 foundation (environment validation and the
+verified collection path). Later phases (dataset, models, controller,
+evaluation) are described in the execution spec and not yet implemented.
 
 ## What this project does
 
@@ -47,22 +47,53 @@ pip install -e .
 
 Pinned versions used for the validated setup: `requirements\lock.txt`.
 
-## Commands (Phase 0)
+## Commands
 
 | Command | What it does |
 |---|---|
-| `psi-validate-env` | Full environment validation (starts/removes a temp container). Text to stdout + JSON report saved under `artifacts\reports\`. Exit code 0 = pass. |
-| `psi-validate-env --skip-docker` | Host-only checks, no containers. |
-| `psi-validate-env --json` | JSON to stdout instead of text. |
+| `psi-validate-env` | Full environment validation (starts/removes a temp container). Text to stdout + JSON report saved under `artifacts\reports\`. Exit code 0 = pass. Flags: `--skip-docker`, `--json`. |
 | `psi-smoke` | Minimal end-to-end smoke test: start container → 3 sidecar samples → clean up. |
 | `psi-version-report` | Versions of Python, dependencies, and Docker. |
+| `docker build -f docker\Dockerfile.workloads -t psi-workloads:latest .` | Build the workload + sampler image (required before running workloads). |
+| `psi-run --config configs\calibration.yaml` | Run a batch of workload runs; writes `data\raw\<run_id>\{samples.jsonl, meta.json, workload.log}` + a batch manifest. |
+| `psi-calibrate` | Analyze the newest batch: check expected PSI signatures, write plots to `artifacts\plots\calibration\` and a JSON report to `artifacts\reports\`. |
+| `psi-dashboard <container>` | Live Rich dashboard (usage, limit, ratio, PSI, stall deltas, swap, events) for any running container. |
 | `pytest` | All tests (unit + docker integration). |
 | `pytest -m "not docker"` | Unit tests only (no Docker needed). |
 | `.\scripts\run_tests.ps1 [-UnitOnly]` | Same, as a script. |
 
-Docker Desktop must be running for `psi-validate-env` (without
-`--skip-docker`), `psi-smoke`, and the integration tests; docker-marked tests
-auto-skip when the daemon is down.
+Docker Desktop must be running for everything except unit tests and
+`psi-validate-env --skip-docker`; docker-marked tests auto-skip when the
+daemon is down.
+
+## Workloads
+
+Five containerized workloads (stdlib-only Python, in `workloads/`), each with
+configurable parameters, a deterministic seed, a duration, and clean SIGTERM
+shutdown. Batches are driven by YAML configs (`configs/`):
+
+| Workload | Behavior | Expected signal |
+|---|---|---|
+| `steady` | allocate and hold a fixed working set (+optional churn) | flat usage, PSI ≈ 0 |
+| `leak` | allocate anonymous memory forever, re-touch old chunks | rising PSI under a tight limit + swap, then OOM kill |
+| `file_burst` | repeatedly read a large file through the page cache | high usage, PSI low (reclaimable) |
+| `bursty` | allocate/touch/free cycles with idle gaps | oscillating usage and PSI |
+| `trace_replay` | track a memory-demand curve from a trace file (`workloads/traces/`) | follows the trace shape |
+
+Each run records full metadata (`meta.json`): run ID, workload, params, seed,
+image digest, limits, timings, exit code, OOM status (docker flag **and**
+`memory.events` counters), collector config, and the environment
+`validation_id` it ran under. Raw samples are immutable JSONL — one line per
+second with all scalar files, PSI, `memory.events`, and `memory.stat`.
+
+Calibration (`psi-run --config configs\calibration.yaml` then `psi-calibrate`)
+verifies the expected-signal column above actually holds on this machine
+before any model training — the spec's guard against training on dead PSI.
+Latest calibration: **overall PASS** — steady/file_burst at 0 % PSI (with
+file cache at 85 % of the limit), leak rising to 5.5 % `some.avg10` ending in
+a detected OOM kill, bursty oscillating, trace replay tracking with
+correlation 1.0 (plots in `artifacts\plots\calibration\`, report in
+`artifacts\reports\`).
 
 ## How per-container metrics are collected (Docker Desktop)
 
@@ -100,17 +131,21 @@ controller mode in Phase 4).
 
 ```
 docs/                  proposal PDF, execution spec, traceability, progress, decisions
+workloads/             container-side scripts: 5 workloads + sampler.py + traces/
+docker/                Dockerfile.workloads (workload + sampler image)
 src/psi_memory/
   common/              logging, deterministic seeds, byte-unit parsing
-  collector/           cgroup v2 parsers + snapshot reader (Phase 1: full collector)
-  environment/         docker CLI wrapper, container probes, validate_env
-  workloads|dataset|features|models|controller|evaluation|dashboard/   later phases
-configs/               example configurations
+  collector/           cgroup v2 parsers, snapshot reader, sampler stream (host side)
+  environment/         docker CLI wrapper, probes, validate_env, calibration
+  workloads/           YAML batch config + runner (host-side orchestration)
+  dashboard/           live Rich dashboard
+  dataset|features|models|controller|evaluation/           later phases
+configs/               calibration.yaml, collection_full.example.yaml, examples
 requirements/          base.txt, dev.txt, lock.txt (pinned)
 tests/unit/            no Docker required
 tests/integration/     marked `docker`; auto-skip when daemon is down
-data/                  raw/processed/splits datasets (gitignored)
-artifacts/             models, metrics, plots, reports (env-validation JSONs live here)
+data/raw/<run_id>/     samples.jsonl + meta.json + workload.log per run (gitignored)
+artifacts/             models, metrics, plots, reports (validation + calibration)
 scripts/               run_tests.ps1
 ```
 

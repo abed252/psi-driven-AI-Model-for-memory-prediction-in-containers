@@ -1,62 +1,100 @@
 # Progress
 
-Current phase: **Phase 0 — COMPLETE** (2026-07-15). Next: Phase 1.
+Current phase: **Phase 1 — COMPLETE** (2026-07-16). Next: Phase 2.
 
-## Phase 0 report
+## Phase 1 report (workloads, collector, dashboard, calibration)
+
+### Headline result
+
+**PSI behaves exactly as the proposal predicts on this machine.** Calibration
+(5 live runs, `artifacts/reports/calibration_20260716-014102.json`): overall
+**PASS**:
+
+| Workload | peak some.avg10 | cumulative stall | OOM | verdict |
+|---|---|---|---|---|
+| steady | 0.00 % | 0 s | no | PSI near zero ✔ |
+| file_burst | 0.00 % (usage 85 % of limit) | 0 s | no | high usage, PSI low ✔ — the §1 ambiguity, live |
+| leak | **5.47 %** | **1.28 s** | **yes** (exit 137, flag+events) | PSI rises then OOM ✔ |
+| bursty | 3.58 % | 2.47 s | no | 10 usage swings, oscillating PSI ✔ |
+| trace_replay | 0.00 % | 0 s | no | tracks trace, correlation 1.000 ✔ |
+
+steady/file_burst vs leak is precisely the raw-usage-is-ambiguous story the
+project is built on, now demonstrated with our own pipeline end to end.
 
 ### Files created or changed
 
-- `pyproject.toml` — package `psi-memory`, src layout, console scripts, pytest config
-- `requirements/{base,dev,lock}.txt` — pinned dependencies (Python 3.11.9 venv in `.venv/`)
-- `src/psi_memory/common/` — `logging.py` (console+JSONL), `seed.py` (derive_seed, seed_everything), `units.py` (cgroup scalar / "max" / byte-MiB handling)
-- `src/psi_memory/collector/` — `parsers.py` (PSI, keyed counters), `cgroup_reader.py` (snapshot reader, fake-fs testable)
-- `src/psi_memory/environment/` — `docker_cli.py`, `probe.py` (temp containers, exec reads, sidecar sampling, limit updates), `report.py`, `validate.py`
-- `src/psi_memory/cli.py` — `psi-validate-env`, `psi-version-report`, `psi-smoke`
-- placeholder subpackages: workloads, dataset, features, models, controller, evaluation, dashboard
-- `configs/validate_env.example.yaml`, `scripts/run_tests.ps1`
-- `tests/unit/` (6 files, 29 tests), `tests/integration/` (2 files + conftest, 7 tests)
-- `README.md`, `docs/requirements_traceability.md`, `docs/decisions.md` (D1–D8), this file
-- directory skeleton: `data/{raw,processed,splits}`, `artifacts/{models,metrics,plots,reports}`, `logs/`, `workloads/`, `docker/`
+- `workloads/` — container-side stdlib scripts: `wl_common.py`, `steady.py`,
+  `leak.py`, `file_burst.py`, `bursty.py`, `trace_replay.py`,
+  `sampler.py` (JSONL sampler sidecar), `traces/example_trace.csv`
+- `docker/Dockerfile.workloads` — single image for workloads + sampler
+- `src/psi_memory/collector/stream.py` — host-side sidecar launch + JSONL streaming
+- `src/psi_memory/workloads/config.py`, `runner.py` — YAML batch config,
+  run-matrix expansion with derived seeds, full run lifecycle + metadata
+- `src/psi_memory/dashboard/live.py` — Rich live dashboard (`psi-dashboard`)
+- `src/psi_memory/environment/calibration.py` — signature checks, plots, report
+- `src/psi_memory/cli.py`, `pyproject.toml` — new commands: `psi-run`,
+  `psi-dashboard`, `psi-calibrate`; new dep: matplotlib (lock.txt updated)
+- `configs/calibration.yaml`, `configs/collection_full.example.yaml`
+- tests: `test_batch_config.py`, `test_sampler_script.py`,
+  `test_trace_replay.py`, `test_calibration_analysis.py`,
+  `test_dashboard_view.py` (unit) + `tests/integration/test_workload_runs.py`
+- docs: README (commands, workloads, repo map), decisions (D9–D14),
+  traceability rows 1/3/4 → done, this file
 
 ### Commands executed (key ones)
 
-- Environment probes: `docker info`, temp alpine containers, sidecar cgroup reads, `docker update --memory`, `memory.high` write/restore
-- `py -3.11 -m venv .venv`; `pip install -e .` + deps; `pip freeze > requirements/lock.txt`
-- `pytest -m "not docker"` → **29 passed**
-- `pytest -m docker` → **7 passed**
-- `psi-validate-env` → **15/15 checks PASS**, report `artifacts/reports/env_validation_20260715-222315_4167fbed30ae.json`
-- `psi-smoke` → PASS (3 sidecar samples); `psi-version-report` → OK
+- `docker build -f docker/Dockerfile.workloads -t psi-workloads:latest .`
+- `pytest -m "not docker"` → **53 passed**; `pytest -m docker` → **11 passed**
+- `psi-run --config configs/calibration.yaml` → 5/5 runs, batch manifest
+- `psi-calibrate` → overall PASS, 5 plots + JSON report
 
 ### Tests
 
-36/36 passing (29 unit, 7 docker integration). Integration tests auto-skip
-when the Docker daemon is down.
+64/64 passing (53 unit, 11 docker integration — including: steady run end to
+end with complete metadata; collector surviving early target exit
+(`end_reason=target_exited`); leak run recording growth **and** OOM
+(exit 137, `OOMKilled` flag); `memory.high` applied via sidecar).
 
-### Phase 0 completion criteria check
+### Phase 1 completion criteria check
 
-- Repo structure per spec ✔ · Python 3.11 package + venv + pins ✔
-- logging / seeds / version-report / run-tests / smoke commands ✔
-- `validate_env` with all required checks, text + JSON ✔
-- **Gate: temp container started and `memory.current` + `memory.pressure`
-  sampled reliably ✔** (5/5 sidecar samples, monotonic timestamps, gaps in
-  tolerance — integration test + validator check)
+- 5 required workloads with configurable params, seeds, timeouts, clean
+  SIGTERM shutdown ✔ (trace-replay engine + synthetic example trace;
+  external trace download deliberately separate, documented)
+- YAML batch runner recording every spec-required metadata field incl.
+  image digest and `env_validation_id` ✔
+- Collector: configurable interval, monotonic drift-free scheduling,
+  per-line flush, tolerates container exit, malformed-record detection,
+  raw fields preserved (JSONL), one metadata record per run, runs never
+  merged ✔
+- Rich live dashboard with all required fields ✔
+- Calibration configs (fast) + full-collection example configs ✔
+- PSI validation: expected signatures confirmed, OOM + `memory.events`
+  detected, swap recorded, plots + machine-readable report stored ✔
 
 ### Remaining risks
 
-1. PSI has only been observed at ~0 (idle containers); no workload has yet
-   driven it up. Phase 1 calibration must demonstrate rising PSI under a
-   tight-limit leak with swap — if not, diagnose per the spec's checklist.
-2. Sidecar sampling validated at 5 samples / 1 Hz on one container; Phase 1
-   needs a long-running multi-container collector with atomic writes and
-   drift-free scheduling (helper `probe.wait_monotonic` exists, unused yet).
-3. VM is 7.4 GiB RAM / 2 GiB swap — workload limits must be sized so pressure
-   happens inside container limits, not VM-wide.
-4. OneDrive + non-ASCII path: venv and data live under a synced folder; if
-   sync interferes with data collection, move `data/` output elsewhere (D4).
+1. Leak PSI peaked at 5.47 % — above the ≥5 % gate but not by much. For the
+   Phase 2 full collection, consider higher `retouch_fraction` / tighter
+   limits to get richer pressure variation (thresholds recorded in D14).
+2. `some` ≈ `full` in single-process containers; multi-process workloads
+   would decouple them. Not required by the proposal, noted for honesty.
+3. Calibration numbers come from one run per workload; the full collection
+   uses repeats with varied parameters (already configured in the example).
+4. VM clock vs host clock skew is unmeasured; run correlation currently
+   relies on the VM-monotonic timeline only, which is self-consistent.
 
-### Exact next step (Phase 1)
+### Exact next step (Phase 2)
 
-Implement the containerized workloads (steady, leak, file-burst, bursty,
-trace-replay skeleton) + the sidecar collector writing per-run CSVs with
-metadata (run ID, seed, params, validation_id), then the Rich dashboard, then
-calibration runs demonstrating the expected PSI signatures.
+Dataset builder: JSONL → windowed feature tables with future-peak labels
+(strictly after window end), run-level splits with manifests, leakage tests;
+then persistence + percentile heuristic + RF/XGBoost with the with/without-PSI
+ablation on a small collected batch.
+
+---
+
+## Phase 0 report (2026-07-15) — foundation
+
+Phase 0 delivered the repo structure, Python 3.11 package, environment
+validator (15/15 PASS, report `env_validation_..._4167fbed30ae.json`), the
+verified sidecar collection path, and 36 tests. Details: git history and
+`docs/decisions.md` D1–D8.

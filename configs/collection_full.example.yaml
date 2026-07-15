@@ -1,0 +1,68 @@
+# Example of a full data-collection batch (Phase 2 input): several
+# independent repeats per workload with varied parameters so entire runs can
+# be held out for testing. Copy, adjust, and run overnight:
+#   psi-run --config configs/collection_full.yaml
+defaults:
+  base_seed: 1000
+  interval_s: 1.0
+  image: psi-workloads:latest
+
+runs:
+  - workload: steady
+    repeats: 4
+    duration_s: 300
+    memory_limit: 256m
+    memory_swap: 512m
+    params: {working_set_mib: 64, churn_mib: 4}
+  - workload: steady
+    repeats: 4
+    duration_s: 300
+    memory_limit: 512m
+    memory_swap: 1g
+    params: {working_set_mib: 200, churn_mib: 8}
+
+  - workload: file_burst
+    repeats: 4
+    duration_s: 300
+    memory_limit: 256m
+    memory_swap: 512m
+    params: {file_mib: 200, pause_s: 1.0}
+  - workload: file_burst
+    repeats: 4
+    duration_s: 300
+    memory_limit: 512m
+    memory_swap: 1g
+    params: {file_mib: 400, pause_s: 2.0}
+
+  - workload: leak
+    repeats: 4
+    duration_s: 240
+    memory_limit: 192m
+    memory_swap: 384m
+    params: {step_mib: 4, tick_s: 1.0, retouch_fraction: 0.3}
+  - workload: leak
+    repeats: 4
+    duration_s: 240
+    memory_limit: 320m
+    memory_swap: 640m
+    params: {step_mib: 8, tick_s: 2.0, retouch_fraction: 0.5}
+
+  - workload: bursty
+    repeats: 4
+    duration_s: 300
+    memory_limit: 192m
+    memory_swap: 384m
+    params: {burst_mib: 200, hold_s: 8, idle_s: 8}
+  - workload: bursty
+    repeats: 4
+    duration_s: 300
+    memory_limit: 256m
+    memory_swap: 512m
+    params: {burst_mib: 300, hold_s: 12, idle_s: 15}
+
+  - workload: trace_replay
+    repeats: 4
+    duration_s: 100
+    memory_limit: 320m
+    memory_swap: 640m
+    params: {trace_file: /app/traces/example_trace.csv, scale: 1.0}

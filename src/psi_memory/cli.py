@@ -59,6 +59,64 @@ def main_version_report(argv: list[str] | None = None) -> int:
     return 0
 
 
+def main_run(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        prog="psi-run",
+        description="Execute a batch of workload runs defined in a YAML config.",
+    )
+    parser.add_argument("--config", type=Path, required=True)
+    parser.add_argument("--data-dir", type=Path, default=Path("data/raw"))
+    args = parser.parse_args(argv)
+    setup_logging()
+
+    from psi_memory.environment.docker_cli import daemon_running
+    from psi_memory.workloads.config import load_batch_config
+    from psi_memory.workloads.runner import execute_batch
+
+    if not daemon_running():
+        print("Docker daemon not running — start Docker Desktop first",
+              file=sys.stderr)
+        return 1
+    config = load_batch_config(args.config)
+    metas = execute_batch(config, args.data_dir)
+    return 0 if len(metas) == len(config.runs) else 1
+
+
+def main_dashboard(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        prog="psi-dashboard",
+        description="Live memory/PSI dashboard for a running container.",
+    )
+    parser.add_argument("container", help="container name or ID")
+    parser.add_argument("--interval-s", type=float, default=1.0)
+    args = parser.parse_args(argv)
+
+    from psi_memory.dashboard.live import run_dashboard
+
+    return run_dashboard(args.container, args.interval_s)
+
+
+def main_calibrate(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        prog="psi-calibrate",
+        description="Analyze calibration runs: check expected PSI signatures, "
+                    "write plots and a machine-readable report.",
+    )
+    parser.add_argument("--batch-manifest", type=Path, default=None,
+                        help="batch_*.json produced by psi-run "
+                             "(default: newest in --data-dir)")
+    parser.add_argument("--data-dir", type=Path, default=Path("data/raw"))
+    parser.add_argument("--plots-dir", type=Path, default=Path("artifacts/plots/calibration"))
+    parser.add_argument("--reports-dir", type=Path, default=REPORTS_DIR)
+    args = parser.parse_args(argv)
+    setup_logging()
+
+    from psi_memory.environment.calibration import calibrate
+
+    return calibrate(args.data_dir, args.batch_manifest, args.plots_dir,
+                     args.reports_dir)
+
+
 def main_smoke(argv: list[str] | None = None) -> int:
     """Minimal end-to-end smoke test: start a container, sample it, clean up."""
     setup_logging()
