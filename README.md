@@ -7,13 +7,13 @@ Course 236502 — Project in Artificial Intelligence, Technion.
 Proposal: [`docs/proposal/PROPOSAL_document_v2.pdf`](docs/proposal/PROPOSAL_document_v2.pdf)
 · Execution contract: [`docs/PROJECT_EXECUTION_SPEC.md`](docs/PROJECT_EXECUTION_SPEC.md)
 
-**Status: Phase 3 complete** — the full model ladder now runs: persistence,
-Autopilot-style percentile heuristic, Random Forest, XGBoost, and the LSTM,
-each learned model in with/without-PSI variants over the same leakage-safe
-dataset pipeline (Phases 0-2: environment validation, workloads + collector +
-calibration, dataset + classical baselines). Remaining: closed-loop
-controller (Phase 4) and the full evaluation on a large varied-parameter
-collection (Phase 5).
+**Status: Phase 4 complete** — the closed-loop controller now runs in four
+interchangeable modes (fixed / Autopilot-style percentile / Senpai-style
+`memory.high` / learned model artifact) with mandatory safety rules and full
+per-decision logging, on top of the model ladder (Phase 3), the leakage-safe
+dataset pipeline (Phase 2), workloads + collector + calibration (Phase 1),
+and environment validation (Phase 0). Remaining: Phase 5 — the large
+varied-parameter collection and full evaluation.
 
 ## What this project does
 
@@ -64,6 +64,7 @@ Pinned versions used for the validated setup: `requirements\lock.txt`.
 | `psi-build-dataset --out data\processed\<name> [--batch-manifest <path>]` | Build a processed dataset (windows + future-peak labels + run-level splits) from raw runs; enforces data-quality gates. Config: `configs\dataset.yaml`. |
 | `psi-train --dataset data\processed\<name> --model rf --variant with_psi` | Train/evaluate one model (`persistence`, `heuristic`, `rf`, `xgb`, `lstm`); saves artifact + metrics. `--include-test` unlocks the test split (final runs only). |
 | `psi-ablate --dataset data\processed\<name> [--with-lstm]` | The PSI ablation: every model with and without PSI on identical data; prints a table, saves a JSON report to `artifacts\metrics\`. |
+| `psi-control <container> --mode percentile` | Closed-loop controller, **dry-run by default** — logs every decision without touching the container. Modes: `fixed`, `percentile`, `senpai`, `learned` (add `--model <artifact>`). `--live` actually writes limits and restores the originals afterwards. Config: `configs\controller.yaml`. |
 | `pytest` | All tests (unit + docker integration). |
 | `pytest -m "not docker"` | Unit tests only (no Docker needed). |
 | `.\scripts\run_tests.ps1 [-UnitOnly]` | Same, as a script. |
@@ -172,6 +173,37 @@ controller mode in Phase 4).
 | `memory.stat` | detailed breakdown (anon, file, …) |
 | `memory.swap.current` / `.max` | swap usage / limit |
 
+## Closed-loop controller
+
+`psi-control` attaches to a running container, feeds a rolling window of the
+same signals the models were trained on (online/offline parity is tested),
+and adjusts the container's memory limit each step. **Offline prediction**
+(Phases 2-3) scores models against recorded data; **online control** (this)
+acts on a live container and is judged by outcomes: OOM events, wasted
+headroom, write counts.
+
+| Mode | Target | Behavior |
+|---|---|---|
+| `fixed` | `memory.max` | constant limit (the do-nothing baseline) |
+| `percentile` | `memory.max` | Autopilot-style: p95/max of recent usage + margin |
+| `senpai` | `memory.high` | Senpai-style: squeeze while PSI stall stays under a target budget, back off above it |
+| `learned` | `memory.max` | model artifact (`.joblib` tree or `.pt` LSTM) predicts the future peak + margin |
+
+Safety rules (all enforced in `controller/safety.py`, all tested): requests
+below live usage + floor are raised; malformed values rejected; min/max
+bounds; per-write step caps; hysteresis to avoid needless writes; a minimum
+interval between writes; dry-run by default; original limits restored after
+live sessions; failed writes recorded, never hidden; the loop stops safely
+when the container exits. Senpai mode is exempt from the usage floor only —
+squeezing `memory.high` below usage is its probing mechanism (`memory.max` is
+never touched by it).
+
+Every decision is logged to
+`artifacts\controller\<session>\decisions.jsonl` with the observed metrics,
+prediction, requested vs applied value, clip reasons, rate-limit state,
+previous limit, safety config, model identity, and write outcome — the input
+for Phase 5's closed-loop comparison.
+
 ## Repository map
 
 ```
@@ -186,8 +218,9 @@ src/psi_memory/
   dashboard/           live Rich dashboard
   dataset/             loader, signals, windows+labels, features, splits,
                        quality gates, builder
-  models/              baselines, RF/XGBoost training, metrics, PSI ablation
-  features|controller|evaluation/                          later phases
+  models/              baselines, RF/XGBoost/LSTM training, metrics, ablation
+  controller/          safety gate, policies, actuators, control loop
+  features|evaluation/                                     later phases
 configs/               calibration.yaml, collection_full.example.yaml, examples
 requirements/          base.txt, dev.txt, lock.txt (pinned)
 tests/unit/            no Docker required

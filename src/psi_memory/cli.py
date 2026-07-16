@@ -213,6 +213,44 @@ def main_ablate(argv: list[str] | None = None) -> int:
     return 0
 
 
+def main_control(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        prog="psi-control",
+        description="Closed-loop memory-limit controller (DRY-RUN by default).",
+    )
+    parser.add_argument("container", help="target container name or ID")
+    parser.add_argument("--mode", required=True,
+                        choices=["fixed", "percentile", "senpai", "learned"])
+    parser.add_argument("--model", type=Path, default=None,
+                        help="model artifact for --mode learned (.joblib or .pt)")
+    parser.add_argument("--duration-s", type=float, default=120)
+    parser.add_argument("--live", action="store_true",
+                        help="actually write limits (default: dry-run)")
+    parser.add_argument("--config", type=Path,
+                        default=Path("configs/controller.yaml"))
+    parser.add_argument("--out-root", type=Path,
+                        default=Path("artifacts/controller"))
+    args = parser.parse_args(argv)
+    setup_logging()
+
+    import json
+
+    import yaml
+
+    from psi_memory.controller.loop import run_live
+    from psi_memory.environment.docker_cli import daemon_running
+
+    if not daemon_running():
+        print("Docker daemon not running", file=sys.stderr)
+        return 1
+    config = yaml.safe_load(args.config.read_text(encoding="utf-8")) or {}
+    summary = run_live(args.container, args.mode, config, args.duration_s,
+                       live=args.live, model_artifact=args.model,
+                       out_root=args.out_root)
+    print(json.dumps(summary, indent=2))
+    return 0 if summary["failed_writes"] == 0 else 1
+
+
 def main_smoke(argv: list[str] | None = None) -> int:
     """Minimal end-to-end smoke test: start a container, sample it, clean up."""
     setup_logging()

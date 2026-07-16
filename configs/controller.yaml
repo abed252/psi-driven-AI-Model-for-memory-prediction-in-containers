@@ -1,0 +1,29 @@
+# Controller configuration (psi-control). Dry-run is the CLI default;
+# pass --live to actually write limits.
+controller:
+  interval_s: 1.0
+  history_samples: 30      # must match the trained model's window length
+
+safety:
+  floor_mib: 16            # memory.max never below live usage + this
+  min_limit_mib: 32
+  max_limit_mib: 1024
+  max_step_up_mib: 128     # per write
+  max_step_down_mib: 64
+  hysteresis_mib: 4        # skip writes smaller than this
+  min_write_interval_s: 5
+
+fixed:
+  limit_mib: 256
+
+percentile:                # Autopilot-style
+  percentile: 95
+  margin_frac: 0.15
+
+senpai:                    # Senpai-style memory.high control
+  target_stall_ms: 10.0    # acceptable stall per sampling interval
+  step_frac: 0.02
+  min_frac_of_usage: 0.5
+
+learned:
+  margin_frac: 0.15

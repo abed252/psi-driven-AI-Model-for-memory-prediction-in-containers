@@ -185,3 +185,31 @@ state dict + normalizer + signal list + config + loss history. Default
 architecture is deliberately small (hidden 64, 1 layer): the mini dataset
 saturates in seconds on CPU, and honest comparison, not capacity, is the
 point at this phase.
+
+## D21 — Controller architecture: policy / safety / actuator separation (Phase 4, 2026-07-16)
+
+Policies only propose values; a stateful SafetyGate applies every mandatory
+rule and records why anything was altered or vetoed; actuators perform the
+write (dry-run recorder, fake cgroup directory for tests, docker for live).
+The loop is source- and actuator-agnostic, so the spec's "test with a fake
+cgroup filesystem before live containers" is the same code path as
+production. Live memory.max goes through `docker update` (swap scaled
+alongside, restored with the recorded original); memory.high through the
+privileged sidecar (D2).
+
+## D22 — Senpai-style mode is exempt from the usage floor
+
+The "never below live usage + floor" rule guards memory.max, where a low
+value means an OOM kill. Senpai-style control deliberately pushes
+memory.high BELOW usage — that throttling is how it probes the real working
+set — so its gate runs with enforce_usage_floor=False and its own bound
+(min_frac_of_usage, default 0.5) plus the global min-limit/step/rate rules.
+memory.max is never touched in this mode.
+
+## D23 — Controller reuses the dataset's signal computation verbatim
+
+The online window (controller/window.py) builds its matrix by calling the
+SAME loader._row + compute_signals used by the offline dataset builder, and
+a parity test asserts equality on identical samples. A learned policy in
+production therefore sees features computed exactly as in training —
+train/serve skew is structurally impossible rather than carefully avoided.

@@ -1,6 +1,81 @@
 # Progress
 
-Current phase: **Phase 3 — COMPLETE** (2026-07-16). Next: Phase 4 (controller).
+Current phase: **Phase 4 — COMPLETE** (2026-07-16). Next: Phase 5 (full evaluation).
+
+## Phase 4 report (closed-loop controller)
+
+### Headline result
+
+The controller runs all four modes end to end. Verified live on real
+containers (docker-marked tests): a dry-run session leaves `memory.max`
+byte-identical; a live percentile session changes `memory.max` via
+`docker update` and restores the original afterwards; a live Senpai-style
+session writes `memory.high` through the sidecar, never touches
+`memory.max`, and restores. All safety interventions appear in the decision
+logs with explicit reasons.
+
+### Files created or changed
+
+- `src/psi_memory/controller/safety.py` — SafetyGate: usage floor, malformed
+  rejection, min/max bounds, per-write step caps, hysteresis, write-interval
+  rate limit; every intervention recorded (D21)
+- `src/psi_memory/controller/policies.py` — fixed, Autopilot-style
+  percentile, Senpai-style memory.high (usage-floor exemption, D22), learned
+  (.joblib tabular and .pt LSTM artifacts)
+- `src/psi_memory/controller/window.py` — online rolling signal window
+  reusing the dataset builder's computation verbatim (parity tested, D23)
+- `src/psi_memory/controller/actuator.py` — dry-run recorder, fake-cgroup
+  test actuator, docker actuator (memory.max via docker update + scaled
+  swap; memory.high via sidecar); failures recorded, never raised
+- `src/psi_memory/controller/loop.py` — run_session (source/actuator-
+  agnostic) + run_live (sampler stream, dry-run default, restore-on-exit)
+- CLI `psi-control`; `configs/controller.yaml`
+- tests: `test_controller_safety.py` (9), `test_controller_policies.py` (11),
+  `tests/integration/test_controller_loop.py` (8, fake cgroup),
+  `tests/integration/test_controller_live.py` (3, docker live)
+- docs: README controller section, decisions D21-D23, traceability rows
+  14-15 ✅, this file
+
+### Commands executed (key ones)
+
+- `pytest -m "not docker"` → **135 passed**
+- `pytest -m docker` → **14 passed** (incl. live write+restore both targets)
+
+### Phase 4 completion criteria check
+
+- Dry-run mode first, and default ✔ (`--live` opt-in)
+- Four modes: fixed / percentile / Senpai-style / learned (configurable
+  artifact, tree and LSTM) ✔
+- Per-decision log with every spec field (timestamp, observed metrics,
+  prediction, requested/applied, clip reasons, prev limit, live usage,
+  safety config, rate limiting, model, OOM/event state, write outcome) ✔
+- All mandatory safety rules implemented and unit-tested ✔
+- Fake-cgroup testing before live containers ✔ (same code path)
+- Restore original limits after experiments ✔ (verified live)
+- Safe stop on container exit ✔; failed writes recorded ✔
+
+### Remaining risks
+
+1. `docker update` grace: memory.max decreases below current usage are
+   refused by docker itself; the usage floor makes this unreachable in
+   normal operation, but heavy races (usage spike between sample and write)
+   would surface as recorded failed writes — acceptable and visible.
+2. Learned mode's history window must match the model's training H (config
+   `history_samples`); mismatch currently produces wrong-length aggregate
+   windows only guarded by feature-count checks. Documented in configs.
+3. Controller interval 1 s + min write interval 5 s are untuned defaults;
+   Phase 5 sweeps margins and may tune these.
+
+### Exact next step (Phase 5)
+
+Full varied-parameter collection (slow leaks per D19, parameter variety per
+workload, mixed workload to be added), then: PSI ablation on the big
+dataset, generalization experiments (held-out runs, parameter shift, LOWO,
+trace replay), closed-loop comparison across modes and safety margins
+(OOM-vs-headroom trade-off curves), error CDFs, final figures + report.
+
+---
+
 
 ## Phase 3 report (LSTM)
 
