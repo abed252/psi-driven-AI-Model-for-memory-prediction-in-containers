@@ -128,3 +128,48 @@ sampled in time. Run metadata records both (`oom_killed_flag`,
 in `environment/calibration.py` and in the calibration report so later phases
 can revisit them; they are calibration gates, not scientific claims.
 
+## D15 — Feature-group boundary for the ablation (Phase 2, 2026-07-16)
+
+`no_psi` features contain only what a conventional usage-based sizing system
+sees: memory.current, memory.max, usage ratio, per-step deltas, swap, and the
+anon/file split from memory.stat. `psi` features contain only
+memory.pressure-derived values (avg10/60/300 for some/full, per-step stall
+deltas). Reclaim counters (pgscan, workingset_refault) are in neither group —
+they are pressure-adjacent and would blur the ablation's attribution; they
+stay in the raw data for possible future analysis.
+
+## D16 — Window/label discipline
+
+Target = max(memory.current) strictly after the window-end sample, within the
+horizon. Windows are discarded when (a) the run ends before the horizon does,
+(b) a sampling gap > max_gap_factor x interval touches the window or horizon,
+(c) the horizon holds fewer than min_horizon_samples samples, or (d) features
+contain NaN (e.g. unlimited memory.max) — discarding is explicit and counted
+per run in dataset.json rather than silently filled.
+
+## D17 — Test split locked behind an explicit flag
+
+`psi-train`/`psi-ablate` evaluate on the validation split; the test split is
+only computed with `--include-test`. The Phase 2 mini dataset is disposable
+pipeline-validation data, so its test split IS evaluated (with the flag) —
+the final Phase 5 dataset will keep its test split untouched until the final
+evaluation.
+
+## D18 — Scaler applied uniformly, fitted on train only
+
+A StandardScaler is fitted on the training split and applied to all splits
+for every learned model — trees don't need it, but a single code path keeps
+the with/without-PSI variants and the future LSTM comparable, and the
+train-only fit is enforced by test.
+
+## D19 — Leak workloads must die slowly (mini-ablation finding)
+
+With H=30 samples history + 30 s horizon, a window needs the run to survive
+61+ s past its start; a leak that OOMs at ~65 s therefore yields almost no
+windows, and the ones discarded are exactly the pressure-rich pre-OOM
+moments (the spec's complete-horizon rule requires discarding them). Fast
+leaks (6-8 MiB/s under 192m+swap) are good for calibration but nearly
+useless for datasets. Data-collection configs use slow leaks (~3 MiB/s,
+OOM ≥ 115 s) so the pressure phase overlaps valid windows. General rule:
+run duration until OOM should be ≥ 2x (history + horizon).
+

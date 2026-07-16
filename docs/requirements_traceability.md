@@ -9,14 +9,14 @@ Status values: ✅ done · 🔶 partial · ⬜ planned (phase in parentheses).
 | 2 | Per-container PSI and memory metrics | Verified inside-container + sidecar reads of `memory.current/max/high/pressure/events/stat/swap.*` | `test_container_sampling.py::test_exec_read_inside_container`, `::test_sidecar_sampling_reliable` | `artifacts/reports/env_validation_*.json` | ✅ |
 | 3 | Environment validation and live monitoring | Validator: `src/psi_memory/environment/validate.py` (CLI `psi-validate-env`); live dashboard: `src/psi_memory/dashboard/live.py` (CLI `psi-dashboard`) | `test_validate_env_e2e.py`, `test_report.py`, `test_dashboard_view.py` | text + JSON reports, `validation_id`, live TUI | ✅ |
 | 4 | Synthetic workloads (steady, leak, file-burst, bursty, trace-replay) | `workloads/{steady,leak,file_burst,bursty,trace_replay}.py` + `wl_common.py`, example trace, image `docker/Dockerfile.workloads`; YAML runner `src/psi_memory/workloads/{config,runner}.py` (CLI `psi-run`); PSI calibration `src/psi_memory/environment/calibration.py` (CLI `psi-calibrate`) | `test_batch_config.py`, `test_trace_replay.py`, `test_calibration_analysis.py`, `tests/integration/test_workload_runs.py` | calibration plots (`artifacts/plots/calibration/`) + report JSON | ✅ |
-| 5 | Sliding-window dataset construction | ⬜ (P2) `src/psi_memory/dataset/` | ⬜ | ⬜ | ⬜ P2 |
-| 6 | Future-peak labels, configurable 30–60 s horizon, no current-sample leakage | ⬜ (P2); byte-unit exactness already in `common/units.py` | `test_units.py` now; label-indexing tests ⬜ | ⬜ | ⬜ P2 |
-| 7 | Persistence baseline | ⬜ (P2) | ⬜ | ⬜ | ⬜ P2 |
-| 8 | Autopilot-style percentile heuristic | ⬜ (P2) | ⬜ | ⬜ | ⬜ P2 |
-| 9 | Random Forest + XGBoost | ⬜ (P2) | ⬜ | ⬜ | ⬜ P2 |
-| 10 | LSTM | ⬜ (P3) | ⬜ | ⬜ | ⬜ P3 |
-| 11 | With/without-PSI ablation at every rung | ⬜ (P2/P3); feature-schema parity requirement recorded | ⬜ | ⬜ | ⬜ |
-| 12 | Run-level train/val/test splits, split manifests | ⬜ (P2) | ⬜ leakage tests | ⬜ | ⬜ P2 |
+| 5 | Sliding-window dataset construction | `src/psi_memory/dataset/`: `loader.py`, `signals.py`, `windows.py`, `features.py` (tabular + sequences), `builder.py` (CLI `psi-build-dataset`), quality gates `quality.py` | `test_windows_labels.py`, `test_feature_parity.py`, `test_quality_gates.py`, `tests/integration/test_pipeline_e2e.py` | `data/processed/<name>/` with tabular.csv, sequences.npz, dataset.json, data_quality.json | ✅ |
+| 6 | Future-peak labels, configurable 30–60 s horizon, no current-sample leakage | `windows.py`: strictly-after target, complete-horizon + gap + NaN discards, configurable H/horizon/interval/stride | `test_windows_labels.py` (hand-calculated series, off-by-one test) | dataset.json target definition | ✅ |
+| 7 | Persistence baseline | `models/baselines.py::persistence_predict` | `test_baselines_and_metrics.py` | ablation reports | ✅ |
+| 8 | Autopilot-style percentile heuristic | `models/baselines.py::heuristic_predict` (p95/max, named per spec) | `test_baselines_and_metrics.py` | ablation reports | ✅ |
+| 9 | Random Forest + XGBoost | `models/training.py` (config-driven, saved artifacts + importances; CLI `psi-train`) | `test_training_discipline.py`, `test_pipeline_e2e.py` | `artifacts/models/`, `artifacts/metrics/` | ✅ |
+| 10 | LSTM | ⬜ (P3); `sequences.npz` input already produced | ⬜ | ⬜ | ⬜ P3 |
+| 11 | With/without-PSI ablation at every rung | `models/ablation.py` (CLI `psi-ablate`): identical rows/splits/params, PSI columns only difference; LSTM rung pending P3 | `test_feature_parity.py`, `test_training_discipline.py::test_variants_differ_only_in_feature_count`, `test_pipeline_e2e.py::test_ablation_end_to_end` | `artifacts/metrics/ablation_*.json` | 🔶 classical rungs ✅, LSTM ⬜ |
+| 12 | Run-level train/val/test splits, split manifests | `dataset/splits.py`: stratified by workload, deterministic, leakage validator, saved manifests | `test_splits_leakage.py`, `test_pipeline_e2e.py::test_windows_respect_split_assignment` | `splits.json` per dataset | ✅ |
 | 13 | Generalization experiments (held-out runs, param shift, LOWO, trace replay) | ⬜ (P5) | ⬜ | ⬜ | ⬜ P5 |
 | 14 | Closed-loop controller + safety rules | ⬜ (P4). Enablers verified now: dynamic `memory.max` via `docker update`; `memory.high` write+restore via sidecar | `test_container_sampling.py::test_dynamic_memory_max_update`, `::test_memory_high_write_and_restore` | validation report | 🔶 actuation verified |
 | 15 | Controller modes: fixed / percentile / Senpai-style / learned | ⬜ (P4) | ⬜ | ⬜ | ⬜ P4 |

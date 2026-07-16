@@ -1,6 +1,99 @@
 # Progress
 
-Current phase: **Phase 1 — COMPLETE** (2026-07-16). Next: Phase 2.
+Current phase: **Phase 2 — COMPLETE** (2026-07-16). Next: Phase 3 (LSTM).
+
+## Phase 2 report (dataset pipeline + classical baselines + mini ablation)
+
+### Headline results
+
+1. **The full pipeline runs end to end on real data**: 23 collected runs →
+   949 leakage-safe windows (train/val/test 517/215/217, quality gates PASS)
+   → persistence / heuristic / RF / XGBoost, each tree twice (with/without
+   PSI) → ablation report `artifacts/metrics/ablation_mini_*.json`.
+
+2. **Mini-ablation numbers (test split; MiB MAE)**: persistence 33.8,
+   heuristic(p95) 15.3, RF 1.90 (no-PSI) / 2.79 (with-PSI), XGB 0.48
+   (no-PSI) / 1.17 (with-PSI). **PSI did not help on this mini dataset — 
+   reported honestly.** Diagnosis (per-workload breakdown): with fixed
+   per-workload parameters the trajectories are near-deterministic (leak
+   test MAE 0.1-0.3 MiB for BOTH variants), so usage features alone almost
+   fully determine the future peak and PSI can only add variance. The claim
+   the project tests lives in the harder settings — varied parameters,
+   parameter shift, leave-one-workload-out — which is the Phase 5 collection
+   design. The mini dataset's job was to validate the machinery, and it did.
+
+3. **Actionable finding (D19)**: fast leaks OOM so quickly that the
+   complete-horizon rule discards nearly all their windows (0-8 per run);
+   slow leaks (3 MiB/s) yield 66-78. Collection configs updated; rule of
+   thumb recorded: time-to-OOM ≥ 2x (history + horizon).
+
+### Files created or changed
+
+- `src/psi_memory/dataset/`: `loader.py` (validated JSONL→frames),
+  `signals.py` (no-PSI vs PSI signal groups — the ablation contract),
+  `windows.py` (windows + strictly-after future-peak labels + discard rules),
+  `features.py` (6 aggregates/signal + baseline columns), `splits.py`
+  (stratified run-level splits + leakage validator + manifests), `quality.py`
+  (gates), `builder.py` (CLI orchestration, full provenance metadata)
+- `src/psi_memory/models/`: `baselines.py`, `metrics.py` (MAE/RMSE/
+  underprediction, per workload), `training.py` (config-driven RF/XGB,
+  train-only scaler, artifacts), `ablation.py`
+- CLIs: `psi-build-dataset`, `psi-train`, `psi-ablate` (test split behind
+  `--include-test`)
+- configs: `dataset.yaml`, `models.yaml`, `mini_collection.yaml`,
+  `mini_leak_extra.yaml`; `collection_full.example.yaml` leaks slowed (D19)
+- deps: numpy, pandas, scikit-learn, xgboost, joblib (lock.txt refreshed)
+- tests: `test_windows_labels.py`, `test_splits_leakage.py`,
+  `test_feature_parity.py`, `test_baselines_and_metrics.py`,
+  `test_training_discipline.py`, `test_quality_gates.py` (unit) +
+  `test_pipeline_e2e.py` (integration, synthetic raw, no Docker);
+  shared synthetic-run factory in `tests/conftest.py`
+- docs: README, decisions D15-D19, traceability rows 5-12, this file
+
+### Commands executed (key ones)
+
+- `psi-run --config configs/mini_collection.yaml` (15 runs) +
+  `configs/mini_leak_extra.yaml` (3 slow leaks)
+- `psi-build-dataset --out data/processed/mini` → 949 windows, gates PASS
+- `psi-ablate --dataset data/processed/mini --include-test`
+- `pytest` → **103 passed** (92 non-docker + 11 docker)
+
+### Phase 2 completion criteria check
+
+- Reproducible dataset builder, raw immutable, full provenance recorded ✔
+- Sequence features (`sequences.npz`) + tabular summaries ✔
+- Without-PSI features per spec list; with-PSI identical rows + PSI columns
+  only (tested) ✔
+- Persistence, Autopilot-style percentile heuristic (named per spec), RF,
+  XGBoost — config-driven ✔
+- Artifacts saved: models, scalers, schema, metadata, config, split IDs,
+  validation metrics, importances ✔
+- Minimal ablation on small generated data before large-scale collection ✔
+- Leakage rules implemented AND tested (run-level splits, train-only scaler,
+  strictly-after labels, horizon discards, manifest storage) ✔
+- Data-quality gates with machine-readable report; pipeline fails on
+  critical gate failures ✔
+
+### Remaining risks
+
+1. Mini-ablation cannot demonstrate the PSI benefit (trajectories too
+   regular); the full collection needs deliberate parameter variety within
+   each workload — designed into `collection_full.example.yaml`.
+2. XGB test MAE of 0.5 MiB signals near-memorization of same-parameter
+   sibling runs; parameter-shift and LOWO experiments (Phase 5) are the
+   honest generalization measures.
+3. `heuristic` currently supports p95/p100 only (columns precomputed at
+   build time); other percentiles need a dataset rebuild or sequence-side
+   computation.
+
+### Exact next step (Phase 3)
+
+LSTM on `sequences.npz`: same splits, same target, with/without-PSI variants
+(signal-column selection), train-only normalization, early stopping,
+checkpointing, CPU training, honest comparison against the tree models.
+
+---
+
 
 ## Phase 1 report (workloads, collector, dashboard, calibration)
 

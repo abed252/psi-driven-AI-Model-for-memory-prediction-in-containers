@@ -7,10 +7,12 @@ Course 236502 — Project in Artificial Intelligence, Technion.
 Proposal: [`docs/proposal/PROPOSAL_document_v2.pdf`](docs/proposal/PROPOSAL_document_v2.pdf)
 · Execution contract: [`docs/PROJECT_EXECUTION_SPEC.md`](docs/PROJECT_EXECUTION_SPEC.md)
 
-**Status: Phase 1 complete** — workloads, collector, dashboard, and PSI
-calibration, on top of the Phase 0 foundation (environment validation and the
-verified collection path). Later phases (dataset, models, controller,
-evaluation) are described in the execution spec and not yet implemented.
+**Status: Phase 2 complete** — leakage-safe dataset pipeline and the
+classical model ladder (persistence, Autopilot-style percentile heuristic,
+Random Forest, XGBoost) with the with/without-PSI ablation, on top of the
+Phase 0 foundation (environment validation, collection path) and Phase 1
+(workloads, collector, dashboard, calibration). Later phases (LSTM,
+closed-loop controller, full evaluation) are not yet implemented.
 
 ## What this project does
 
@@ -58,6 +60,9 @@ Pinned versions used for the validated setup: `requirements\lock.txt`.
 | `psi-run --config configs\calibration.yaml` | Run a batch of workload runs; writes `data\raw\<run_id>\{samples.jsonl, meta.json, workload.log}` + a batch manifest. |
 | `psi-calibrate` | Analyze the newest batch: check expected PSI signatures, write plots to `artifacts\plots\calibration\` and a JSON report to `artifacts\reports\`. |
 | `psi-dashboard <container>` | Live Rich dashboard (usage, limit, ratio, PSI, stall deltas, swap, events) for any running container. |
+| `psi-build-dataset --out data\processed\<name> [--batch-manifest <path>]` | Build a processed dataset (windows + future-peak labels + run-level splits) from raw runs; enforces data-quality gates. Config: `configs\dataset.yaml`. |
+| `psi-train --dataset data\processed\<name> --model rf --variant with_psi` | Train/evaluate one model (`persistence`, `heuristic`, `rf`, `xgb`); saves artifact + metrics. `--include-test` unlocks the test split (final runs only). |
+| `psi-ablate --dataset data\processed\<name>` | The PSI ablation: every model with and without PSI on identical data; prints a table, saves a JSON report to `artifacts\metrics\`. |
 | `pytest` | All tests (unit + docker integration). |
 | `pytest -m "not docker"` | Unit tests only (no Docker needed). |
 | `.\scripts\run_tests.ps1 [-UnitOnly]` | Same, as a script. |
@@ -94,6 +99,36 @@ file cache at 85 % of the limit), leak rising to 5.5 % `some.avg10` ending in
 a detected OOM kill, bursty oscillating, trace replay tracking with
 correlation 1.0 (plots in `artifacts\plots\calibration\`, report in
 `artifacts\reports\`).
+
+## Dataset and models
+
+`psi-build-dataset` turns immutable raw runs into a processed dataset
+directory: `tabular.csv` (windowed aggregate features - last/mean/max/std/
+slope/delta per signal - plus baseline columns and the label), `sequences.npz`
+(raw window tensors for the Phase 3 LSTM), `splits.json`, `dataset.json`
+(full provenance: source runs, feature schema, target definition, window
+config, code version), and `data_quality.json`.
+
+**Prediction target**: `max(memory.current)` in MiB over the samples strictly
+after the window's end, within the configured horizon (default 30 s). The
+sample at the window end is never part of the target.
+
+**Leakage rules enforced in code and tests**: splits assign complete runs
+(never windows), stratified per workload, deterministic from the seed;
+windows near run ends without a complete future horizon are discarded, as are
+windows crossing sampling gaps; scalers fit on the training split only; the
+test split is evaluated only behind an explicit `--include-test` flag.
+
+**Feature variants**: `no_psi` = conventional usage features only (current,
+limit, ratio, deltas, slopes, swap, anon/file from memory.stat); `with_psi` =
+exactly the same plus PSI columns (avg10/60/300 for some/full + per-step
+stall-time deltas). Identical rows, splits, seeds, and hyperparameters —
+metric gaps are attributable to PSI alone.
+
+**Model ladder**: persistence → Autopilot-style percentile heuristic (p95 or
+window max of history usage) → Random Forest → XGBoost, all config-driven
+(`configs\models.yaml`), all saved with scaler, schema, seeds, metrics, and
+tree feature importances under `artifacts\models\` / `artifacts\metrics\`.
 
 ## How per-container metrics are collected (Docker Desktop)
 
@@ -139,7 +174,10 @@ src/psi_memory/
   environment/         docker CLI wrapper, probes, validate_env, calibration
   workloads/           YAML batch config + runner (host-side orchestration)
   dashboard/           live Rich dashboard
-  dataset|features|models|controller|evaluation/           later phases
+  dataset/             loader, signals, windows+labels, features, splits,
+                       quality gates, builder
+  models/              baselines, RF/XGBoost training, metrics, PSI ablation
+  features|controller|evaluation/                          later phases
 configs/               calibration.yaml, collection_full.example.yaml, examples
 requirements/          base.txt, dev.txt, lock.txt (pinned)
 tests/unit/            no Docker required

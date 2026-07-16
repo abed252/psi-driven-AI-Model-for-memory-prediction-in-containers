@@ -1,0 +1,17 @@
+# Supplementary slow-leak runs for the mini dataset.
+# Finding from the first mini batch: fast leaks OOM ~35 s after H+horizon
+# starts mattering, so almost all their windows are discarded for incomplete
+# horizons. Slower leaks keep the pressure phase alive long enough to yield
+# usable windows. The full collection must use slow leaks too (see D19).
+defaults:
+  base_seed: 900
+  interval_s: 1.0
+  image: psi-workloads:latest
+
+runs:
+  - workload: leak
+    repeats: 3
+    duration_s: 160
+    memory_limit: 192m
+    memory_swap: 384m
+    params: {step_mib: 3, tick_s: 1.0, retouch_fraction: 0.4}

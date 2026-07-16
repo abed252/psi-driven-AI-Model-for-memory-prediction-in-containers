@@ -117,6 +117,92 @@ def main_calibrate(argv: list[str] | None = None) -> int:
                      args.reports_dir)
 
 
+def main_build_dataset(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        prog="psi-build-dataset",
+        description="Build a processed windowed dataset from raw runs.",
+    )
+    parser.add_argument("--raw", type=Path, default=Path("data/raw"))
+    parser.add_argument("--out", type=Path, required=True,
+                        help="output directory, e.g. data/processed/mini")
+    parser.add_argument("--config", type=Path, default=Path("configs/dataset.yaml"))
+    parser.add_argument("--runs", type=str, default=None,
+                        help="comma-separated run IDs (default: all in --raw)")
+    parser.add_argument("--batch-manifest", type=Path, default=None,
+                        help="use the run IDs from a psi-run batch manifest")
+    args = parser.parse_args(argv)
+    setup_logging()
+
+    import json
+
+    from psi_memory.dataset.builder import build_dataset, load_dataset_config
+
+    run_ids = args.runs.split(",") if args.runs else None
+    if args.batch_manifest:
+        run_ids = json.loads(args.batch_manifest.read_text(encoding="utf-8"))["run_ids"]
+    ok = build_dataset(args.raw, args.out, load_dataset_config(args.config), run_ids)
+    return 0 if ok else 1
+
+
+def main_train(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        prog="psi-train",
+        description="Train/evaluate one model on a processed dataset.",
+    )
+    parser.add_argument("--dataset", type=Path, required=True)
+    parser.add_argument("--model", required=True,
+                        choices=["persistence", "heuristic", "rf", "xgb"])
+    parser.add_argument("--variant", default="with_psi",
+                        choices=["no_psi", "with_psi"])
+    parser.add_argument("--config", type=Path, default=Path("configs/models.yaml"))
+    parser.add_argument("--models-dir", type=Path, default=Path("artifacts/models"))
+    parser.add_argument("--include-test", action="store_true",
+                        help="also evaluate on the test split (final runs only)")
+    args = parser.parse_args(argv)
+    setup_logging()
+
+    import json
+
+    import yaml
+
+    from psi_memory.models.training import eval_baseline, load_dataset, train_learned
+
+    config = yaml.safe_load(args.config.read_text(encoding="utf-8")) or {}
+    dataset = load_dataset(args.dataset)
+    if args.model in ("persistence", "heuristic"):
+        result = eval_baseline(dataset, args.model, config, args.include_test)
+    else:
+        result = train_learned(dataset, args.model, args.variant, config,
+                               args.models_dir, args.include_test)
+        result = {k: v for k, v in result.items() if k != "feature_importances"}
+    print(json.dumps(result, indent=2))
+    return 0
+
+
+def main_ablate(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        prog="psi-ablate",
+        description="Run the with/without-PSI ablation across all models.",
+    )
+    parser.add_argument("--dataset", type=Path, required=True)
+    parser.add_argument("--config", type=Path, default=Path("configs/models.yaml"))
+    parser.add_argument("--models-dir", type=Path, default=Path("artifacts/models"))
+    parser.add_argument("--metrics-dir", type=Path, default=Path("artifacts/metrics"))
+    parser.add_argument("--include-test", action="store_true")
+    args = parser.parse_args(argv)
+    setup_logging()
+
+    import yaml
+
+    from psi_memory.models.ablation import render_table, run_ablation
+
+    config = yaml.safe_load(args.config.read_text(encoding="utf-8")) or {}
+    report = run_ablation(args.dataset, config, args.models_dir,
+                          args.metrics_dir, args.include_test)
+    print(render_table(report))
+    return 0
+
+
 def main_smoke(argv: list[str] | None = None) -> int:
     """Minimal end-to-end smoke test: start a container, sample it, clean up."""
     setup_logging()

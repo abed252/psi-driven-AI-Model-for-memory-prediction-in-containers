@@ -34,18 +34,20 @@ runs:
     memory_swap: 1g
     params: {file_mib: 400, pause_s: 2.0}
 
+# Leaks are slow by design: runs must survive well past history+horizon
+# or their pressure windows are discarded (docs/decisions.md D19).
   - workload: leak
     repeats: 4
-    duration_s: 240
+    duration_s: 260
     memory_limit: 192m
     memory_swap: 384m
-    params: {step_mib: 4, tick_s: 1.0, retouch_fraction: 0.3}
+    params: {step_mib: 2, tick_s: 1.0, retouch_fraction: 0.3}
   - workload: leak
     repeats: 4
-    duration_s: 240
+    duration_s: 260
     memory_limit: 320m
     memory_swap: 640m
-    params: {step_mib: 8, tick_s: 2.0, retouch_fraction: 0.5}
+    params: {step_mib: 3, tick_s: 1.0, retouch_fraction: 0.5}
 
   - workload: bursty
     repeats: 4

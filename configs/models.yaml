@@ -1,0 +1,16 @@
+# Model configuration for psi-train / psi-ablate.
+seed: 42
+
+heuristic:
+  percentile: 95      # Autopilot-style: 95 (p95) or 100 (window max)
+
+rf:
+  n_estimators: 300
+  max_depth: null     # unlimited
+  min_samples_leaf: 2
+
+xgb:
+  n_estimators: 400
+  max_depth: 6
+  learning_rate: 0.08
+  subsample: 0.9

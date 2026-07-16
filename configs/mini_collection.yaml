@@ -1,0 +1,44 @@
+# Mini collection for the Phase 2 minimal ablation (~30 min total):
+# 3 repeats x 5 workloads, short runs. Purpose: validate the full
+# dataset->models pipeline on real data BEFORE the large-scale collection.
+#   psi-run --config configs/mini_collection.yaml
+defaults:
+  base_seed: 500
+  interval_s: 1.0
+  image: psi-workloads:latest
+
+runs:
+  - workload: steady
+    repeats: 3
+    duration_s: 110
+    memory_limit: 256m
+    memory_swap: 512m
+    params: {working_set_mib: 64, churn_mib: 4}
+
+  - workload: file_burst
+    repeats: 3
+    duration_s: 110
+    memory_limit: 256m
+    memory_swap: 512m
+    params: {file_mib: 200, pause_s: 1.0}
+
+  - workload: leak
+    repeats: 3
+    duration_s: 120
+    memory_limit: 192m
+    memory_swap: 384m
+    params: {step_mib: 6, tick_s: 1.0, retouch_fraction: 0.4}
+
+  - workload: bursty
+    repeats: 3
+    duration_s: 128
+    memory_limit: 192m
+    memory_swap: 384m
+    params: {burst_mib: 200, hold_s: 8, idle_s: 8}
+
+  - workload: trace_replay
+    repeats: 3
+    duration_s: 100
+    memory_limit: 320m
+    memory_swap: 640m
+    params: {trace_file: /app/traces/example_trace.csv, scale: 1.0}

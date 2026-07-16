@@ -1,0 +1,13 @@
+# Dataset build configuration.
+# Target: max(memory.current) strictly after the window end, within horizon_s.
+window:
+  history_samples: 30     # H — input window length (samples)
+  horizon_s: 30.0         # prediction horizon (seconds); proposal range 30-60
+  interval_s: 1.0         # nominal collection sampling interval
+  max_gap_factor: 2.5     # discard windows touching gaps > factor * interval
+  stride: 1               # build a window at every sample
+  min_horizon_samples: 20 # horizon must actually contain this many samples
+
+splits:
+  seed: 42
+  fractions: {train: 0.6, val: 0.2, test: 0.2}   # of complete runs, per workload

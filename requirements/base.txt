@@ -1,4 +1,10 @@
-# Direct runtime dependencies (Phase 0). Exact resolved versions: lock.txt
-# Later phases add: numpy, pandas, scikit-learn, xgboost, torch, matplotlib.
+# Direct runtime dependencies. Exact resolved versions: lock.txt
+# Phase 3 adds: torch.
 rich>=13.7
 pyyaml>=6.0
+matplotlib>=3.8
+numpy>=1.26
+pandas>=2.1
+scikit-learn>=1.4
+xgboost>=2.0
+joblib>=1.3
