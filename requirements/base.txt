@@ -1,6 +1,8 @@
 # Direct runtime dependencies. Exact resolved versions: lock.txt
-# Phase 3 adds: torch.
+# torch is installed from the CPU wheel index:
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
 rich>=13.7
+torch>=2.2
 pyyaml>=6.0
 matplotlib>=3.8
 numpy>=1.26

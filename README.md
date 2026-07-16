@@ -7,12 +7,13 @@ Course 236502 — Project in Artificial Intelligence, Technion.
 Proposal: [`docs/proposal/PROPOSAL_document_v2.pdf`](docs/proposal/PROPOSAL_document_v2.pdf)
 · Execution contract: [`docs/PROJECT_EXECUTION_SPEC.md`](docs/PROJECT_EXECUTION_SPEC.md)
 
-**Status: Phase 2 complete** — leakage-safe dataset pipeline and the
-classical model ladder (persistence, Autopilot-style percentile heuristic,
-Random Forest, XGBoost) with the with/without-PSI ablation, on top of the
-Phase 0 foundation (environment validation, collection path) and Phase 1
-(workloads, collector, dashboard, calibration). Later phases (LSTM,
-closed-loop controller, full evaluation) are not yet implemented.
+**Status: Phase 3 complete** — the full model ladder now runs: persistence,
+Autopilot-style percentile heuristic, Random Forest, XGBoost, and the LSTM,
+each learned model in with/without-PSI variants over the same leakage-safe
+dataset pipeline (Phases 0-2: environment validation, workloads + collector +
+calibration, dataset + classical baselines). Remaining: closed-loop
+controller (Phase 4) and the full evaluation on a large varied-parameter
+collection (Phase 5).
 
 ## What this project does
 
@@ -61,8 +62,8 @@ Pinned versions used for the validated setup: `requirements\lock.txt`.
 | `psi-calibrate` | Analyze the newest batch: check expected PSI signatures, write plots to `artifacts\plots\calibration\` and a JSON report to `artifacts\reports\`. |
 | `psi-dashboard <container>` | Live Rich dashboard (usage, limit, ratio, PSI, stall deltas, swap, events) for any running container. |
 | `psi-build-dataset --out data\processed\<name> [--batch-manifest <path>]` | Build a processed dataset (windows + future-peak labels + run-level splits) from raw runs; enforces data-quality gates. Config: `configs\dataset.yaml`. |
-| `psi-train --dataset data\processed\<name> --model rf --variant with_psi` | Train/evaluate one model (`persistence`, `heuristic`, `rf`, `xgb`); saves artifact + metrics. `--include-test` unlocks the test split (final runs only). |
-| `psi-ablate --dataset data\processed\<name>` | The PSI ablation: every model with and without PSI on identical data; prints a table, saves a JSON report to `artifacts\metrics\`. |
+| `psi-train --dataset data\processed\<name> --model rf --variant with_psi` | Train/evaluate one model (`persistence`, `heuristic`, `rf`, `xgb`, `lstm`); saves artifact + metrics. `--include-test` unlocks the test split (final runs only). |
+| `psi-ablate --dataset data\processed\<name> [--with-lstm]` | The PSI ablation: every model with and without PSI on identical data; prints a table, saves a JSON report to `artifacts\metrics\`. |
 | `pytest` | All tests (unit + docker integration). |
 | `pytest -m "not docker"` | Unit tests only (no Docker needed). |
 | `.\scripts\run_tests.ps1 [-UnitOnly]` | Same, as a script. |
@@ -126,9 +127,18 @@ stall-time deltas). Identical rows, splits, seeds, and hyperparameters —
 metric gaps are attributable to PSI alone.
 
 **Model ladder**: persistence → Autopilot-style percentile heuristic (p95 or
-window max of history usage) → Random Forest → XGBoost, all config-driven
-(`configs\models.yaml`), all saved with scaler, schema, seeds, metrics, and
-tree feature importances under `artifacts\models\` / `artifacts\metrics\`.
+window max of history usage) → Random Forest → XGBoost → LSTM, all
+config-driven (`configs\models.yaml`), all saved with scaler/normalizer,
+schema, seeds, metrics, and tree feature importances under
+`artifacts\models\` / `artifacts\metrics\`.
+
+**LSTM specifics**: consumes the stored window tensors (`sequences.npz`) with
+the same splits and target as the trees; per-signal + target normalization
+fitted on the training split only; deterministic initialization from derived
+seeds; Adam + MSE with early stopping on validation loss (patience
+configurable) and best-weights checkpointing; trains on CPU in seconds on the
+mini dataset. Checkpoints (`*.pt`) carry the state dict, normalizer, signal
+list, config, and full loss history.
 
 ## How per-container metrics are collected (Docker Desktop)
 

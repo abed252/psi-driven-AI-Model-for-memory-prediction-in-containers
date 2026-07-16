@@ -26,7 +26,8 @@ log = logging.getLogger(__name__)
 
 
 def run_ablation(dataset_dir: Path, config: dict, models_dir: Path,
-                 metrics_dir: Path, include_test: bool = False) -> dict:
+                 metrics_dir: Path, include_test: bool = False,
+                 include_lstm: bool = False) -> dict:
     dataset = load_dataset(dataset_dir)
     results = []
     for model_name in BASELINE_MODELS:
@@ -35,6 +36,14 @@ def run_ablation(dataset_dir: Path, config: dict, models_dir: Path,
         for variant in VARIANTS:
             results.append(train_learned(dataset, model_name, variant, config,
                                          models_dir, include_test))
+    if include_lstm:
+        from psi_memory.models.lstm import train_lstm
+
+        for variant in VARIANTS:
+            result = train_lstm(dataset_dir, variant, config, models_dir,
+                                include_test)
+            results.append({k: v for k, v in result.items()
+                            if k != "loss_history"})
 
     report = {
         "created": time.strftime("%Y-%m-%dT%H:%M:%S"),

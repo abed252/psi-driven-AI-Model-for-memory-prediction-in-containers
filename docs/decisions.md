@@ -173,3 +173,15 @@ useless for datasets. Data-collection configs use slow leaks (~3 MiB/s,
 OOM ≥ 115 s) so the pressure phase overlaps valid windows. General rule:
 run duration until OOM should be ≥ 2x (history + horizon).
 
+## D20 — LSTM design (Phase 3, 2026-07-16)
+
+The LSTM consumes the dataset's stored window tensors — no separate feature
+path — so trees and network see literally the same windows, splits, and
+target. Inputs and target are standardized with train-only statistics
+(zero-variance guard 1e-6); model selection is early stopping on validation
+loss with best-weights restore (the spec's "test only after final model
+selection" is therefore structural). Checkpoints are torch .pt files carrying
+state dict + normalizer + signal list + config + loss history. Default
+architecture is deliberately small (hidden 64, 1 layer): the mini dataset
+saturates in seconds on CPU, and honest comparison, not capacity, is the
+point at this phase.

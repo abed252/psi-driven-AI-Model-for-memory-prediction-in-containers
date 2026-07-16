@@ -151,7 +151,7 @@ def main_train(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--dataset", type=Path, required=True)
     parser.add_argument("--model", required=True,
-                        choices=["persistence", "heuristic", "rf", "xgb"])
+                        choices=["persistence", "heuristic", "rf", "xgb", "lstm"])
     parser.add_argument("--variant", default="with_psi",
                         choices=["no_psi", "with_psi"])
     parser.add_argument("--config", type=Path, default=Path("configs/models.yaml"))
@@ -168,13 +168,20 @@ def main_train(argv: list[str] | None = None) -> int:
     from psi_memory.models.training import eval_baseline, load_dataset, train_learned
 
     config = yaml.safe_load(args.config.read_text(encoding="utf-8")) or {}
-    dataset = load_dataset(args.dataset)
-    if args.model in ("persistence", "heuristic"):
-        result = eval_baseline(dataset, args.model, config, args.include_test)
+    if args.model == "lstm":
+        from psi_memory.models.lstm import train_lstm
+
+        result = train_lstm(args.dataset, args.variant, config,
+                            args.models_dir, args.include_test)
+        result = {k: v for k, v in result.items() if k != "loss_history"}
     else:
-        result = train_learned(dataset, args.model, args.variant, config,
-                               args.models_dir, args.include_test)
-        result = {k: v for k, v in result.items() if k != "feature_importances"}
+        dataset = load_dataset(args.dataset)
+        if args.model in ("persistence", "heuristic"):
+            result = eval_baseline(dataset, args.model, config, args.include_test)
+        else:
+            result = train_learned(dataset, args.model, args.variant, config,
+                                   args.models_dir, args.include_test)
+            result = {k: v for k, v in result.items() if k != "feature_importances"}
     print(json.dumps(result, indent=2))
     return 0
 
@@ -189,6 +196,8 @@ def main_ablate(argv: list[str] | None = None) -> int:
     parser.add_argument("--models-dir", type=Path, default=Path("artifacts/models"))
     parser.add_argument("--metrics-dir", type=Path, default=Path("artifacts/metrics"))
     parser.add_argument("--include-test", action="store_true")
+    parser.add_argument("--with-lstm", action="store_true",
+                        help="also train the LSTM variants (slower)")
     args = parser.parse_args(argv)
     setup_logging()
 
@@ -198,7 +207,8 @@ def main_ablate(argv: list[str] | None = None) -> int:
 
     config = yaml.safe_load(args.config.read_text(encoding="utf-8")) or {}
     report = run_ablation(args.dataset, config, args.models_dir,
-                          args.metrics_dir, args.include_test)
+                          args.metrics_dir, args.include_test,
+                          include_lstm=args.with_lstm)
     print(render_table(report))
     return 0
 

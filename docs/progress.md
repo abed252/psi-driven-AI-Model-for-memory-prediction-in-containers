@@ -1,6 +1,79 @@
 # Progress
 
-Current phase: **Phase 2 — COMPLETE** (2026-07-16). Next: Phase 3 (LSTM).
+Current phase: **Phase 3 — COMPLETE** (2026-07-16). Next: Phase 4 (controller).
+
+## Phase 3 report (LSTM)
+
+### Headline result — the complete model ladder on the mini dataset
+
+Test-split MAE (MiB), `artifacts/metrics/ablation_mini_20260716-032530.json`:
+
+| model | no-PSI | with-PSI |
+|---|---|---|
+| persistence | 33.82 | (PSI-independent) |
+| heuristic p95 | 15.25 | (PSI-independent) |
+| RF | 1.90 | 2.79 |
+| XGBoost | **0.48** | 1.17 |
+| LSTM | 0.83 | 0.77 |
+
+Honest reading: XGBoost (no-PSI) still leads; the LSTM lands between the
+trees, and it is the first rung where with-PSI edges out no-PSI (0.77 vs
+0.83) — but on this parameter-homogeneous mini data that margin is
+noise-level, not evidence. Per the spec, the LSTM is reported as-is, not
+promoted. The decisive comparison happens on the Phase 5 varied-parameter
+collection.
+
+### Files created or changed
+
+- `src/psi_memory/models/lstm.py` — sequence loading aligned to stored
+  splits/schema, variant column selection, train-only Normalizer (inputs +
+  target, zero-variance guard), LSTM regressor (configurable hidden size /
+  layers / dropout), Adam + MSE, early stopping with best-weights restore,
+  .pt checkpoints with loss history
+- `psi-train --model lstm`; `psi-ablate --with-lstm`; `configs/models.yaml`
+  lstm section
+- torch 2.13 (CPU wheel) added; requirements + lock refreshed
+- tests: `tests/unit/test_lstm_components.py` (7),
+  `tests/integration/test_lstm_e2e.py` (5)
+- docs: README, decisions D20, traceability rows 10-11, this file
+
+### Commands executed (key ones)
+
+- `pip install torch --index-url https://download.pytorch.org/whl/cpu`
+- `pytest -m "not docker"` → **105 passed**; full suite → see below
+- `psi-ablate --dataset data/processed/mini --include-test --with-lstm`
+
+### Phase 3 completion criteria check
+
+- Same run splits + same target as classical models (loads splits.json /
+  dataset.json; alignment tested) ✔
+- with/without-PSI variants (signal-column selection, tested) ✔
+- Sequence normalization fitted only on training data (tested) ✔
+- Reproducible initialization (derived seeds; identical-params test) ✔
+- Train/val loss logging (per-epoch log + history in checkpoint) ✔
+- Early stopping + checkpointing (patience, best-weights restore) ✔
+- CPU-compatible training (CPU-only wheel; seconds on mini data) ✔
+- Configurable depth/hidden/lr/batch/epochs (configs/models.yaml) ✔
+- Test evaluation only after model selection (early stop selects on val;
+  test behind --include-test) ✔
+- Honest reporting even though the LSTM does not beat XGBoost ✔
+
+### Remaining risks
+
+1. On near-deterministic mini data all learned models are within ~2 MiB of
+   perfect; ranking differences are not meaningful. Architecture/tuning work
+   is deliberately deferred until the Phase 5 dataset exists.
+2. LSTM determinism verified on CPU; if a GPU is ever used, torch would need
+   deterministic-algorithms flags (out of scope while device=cpu).
+
+### Exact next step (Phase 4)
+
+Closed-loop controller with dry-run mode and a fake-cgroup test harness:
+fixed / Autopilot-style / Senpai-style (memory.high) / learned-model modes,
+mandatory safety rules, full per-decision logging.
+
+---
+
 
 ## Phase 2 report (dataset pipeline + classical baselines + mini ablation)
 
