@@ -213,3 +213,32 @@ SAME loader._row + compute_signals used by the offline dataset builder, and
 a parity test asserts equality on identical samples. A learned policy in
 production therefore sees features computed exactly as in training —
 train/serve skew is structurally impossible rather than carefully avoided.
+
+## D24 — Full-collection design: loose limits unpin the labels (Phase 5, 2026-07-16)
+
+Under a tight limit with swap, memory.current saturates at the limit, so the
+future-peak label cannot express demand beyond it — the "raise the limit
+before pressure" signal would be structurally absent from training data. The
+full collection therefore mixes tight-limit runs (PSI-rich dynamics) with
+loose-limit leak/mixed runs (unpinned growth, labels reflect real demand).
+The proposal's label definition (peak memory.current) is kept; the
+demand-vs-usage subtlety is discussed honestly in the final report.
+
+## D25 — Mixed workload added for the in-run ambiguity test
+
+workloads/mixed.py cycles a file through the page cache while slowly leaking
+anonymous memory: usage pins near the limit almost immediately while true
+demand grows underneath (verified: 300 MiB leaked under a 192 MiB limit with
+usage flat at the limit and PSI rising to ~5%). This puts the proposal's §1
+ambiguity inside a single trajectory, where usage-only models provably lack
+the information. Registered as a pressure workload for the quality gates.
+
+## D26 — Closed-loop scoring comes from decision logs only
+
+Session outcomes (OOM events, demand-above-limit growth, avg/p95 headroom,
+rewrites, time under pressure, stability) are computed from
+decisions.jsonl + docker's OOMKilled flag — no second measurement channel —
+so every number in the trade-off curves is traceable to a logged decision.
+Headroom for Senpai-style sessions is measured against memory.high (its
+control target); other modes against memory.max. Margin-sensitive modes run
+once per margin to produce curves, not single points (spec requirement).

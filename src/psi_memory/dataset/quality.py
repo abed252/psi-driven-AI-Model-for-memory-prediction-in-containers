@@ -16,7 +16,7 @@ from psi_memory.dataset.loader import RunFrame
 
 log = logging.getLogger(__name__)
 
-PRESSURE_WORKLOADS = ("leak", "bursty")
+PRESSURE_WORKLOADS = ("leak", "bursty", "mixed")
 
 
 @dataclass

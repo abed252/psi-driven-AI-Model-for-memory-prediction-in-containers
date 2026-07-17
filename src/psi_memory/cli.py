@@ -251,6 +251,154 @@ def main_control(argv: list[str] | None = None) -> int:
     return 0 if summary["failed_writes"] == 0 else 1
 
 
+def main_experiment(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        prog="psi-experiment",
+        description="Phase 5 experiment series (offline + closed-loop + figures).",
+    )
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    held = sub.add_parser("heldout", help="multi-seed ablation on held-out runs")
+    held.add_argument("--dataset", type=Path, required=True)
+    held.add_argument("--seeds", type=str, default="42,43,44")
+    held.add_argument("--no-lstm", action="store_true")
+
+    shift = sub.add_parser("param-shift", help="evaluate on shifted parameters")
+    shift.add_argument("--train-dataset", type=Path, required=True)
+    shift.add_argument("--shift-dataset", type=Path, required=True)
+
+    lowo = sub.add_parser("lowo", help="leave-one-workload-out folds")
+    lowo.add_argument("--dataset", type=Path, required=True)
+
+    closed = sub.add_parser("closed-loop", help="live controller comparison")
+    closed.add_argument("--model-no-psi", type=Path, required=True)
+    closed.add_argument("--model-with-psi", type=Path, required=True)
+    closed.add_argument("--margins", type=str, default="0.05,0.15,0.30")
+    closed.add_argument("--controller-config", type=Path,
+                        default=Path("configs/controller.yaml"))
+
+    figs = sub.add_parser("figures", help="generate all final figures")
+    figs.add_argument("--dataset", type=Path, required=True)
+    figs.add_argument("--raw", type=Path, default=Path("data/raw"))
+
+    for p in (held, shift, lowo, closed, figs):
+        p.add_argument("--config", type=Path, default=Path("configs/models.yaml"))
+        p.add_argument("--metrics-dir", type=Path,
+                       default=Path("artifacts/metrics/final"))
+        p.add_argument("--models-dir", type=Path,
+                       default=Path("artifacts/models/final"))
+        p.add_argument("--plots-dir", type=Path,
+                       default=Path("artifacts/plots/final"))
+    args = parser.parse_args(argv)
+    setup_logging()
+
+    import json
+
+    import yaml
+
+    config = yaml.safe_load(args.config.read_text(encoding="utf-8")) or {}
+
+    if args.command == "heldout":
+        from psi_memory.evaluation.experiments import heldout_multi_seed
+
+        seeds = [int(s) for s in args.seeds.split(",")]
+        heldout_multi_seed(args.dataset, config, seeds, args.models_dir,
+                           args.metrics_dir, include_lstm=not args.no_lstm)
+        return 0
+
+    if args.command == "param-shift":
+        from psi_memory.evaluation.experiments import param_shift
+
+        param_shift(args.train_dataset, args.shift_dataset, config,
+                    args.metrics_dir)
+        return 0
+
+    if args.command == "lowo":
+        from psi_memory.evaluation.experiments import leave_one_workload_out
+
+        leave_one_workload_out(args.dataset, config, args.metrics_dir)
+        return 0
+
+    if args.command == "closed-loop":
+        from psi_memory.environment.docker_cli import daemon_running
+        from psi_memory.evaluation.closed_loop import run_comparison
+
+        if not daemon_running():
+            print("Docker daemon not running", file=sys.stderr)
+            return 1
+        controller_config = yaml.safe_load(
+            args.controller_config.read_text(encoding="utf-8")) or {}
+        run_comparison(
+            controller_config,
+            {"learned_no_psi": args.model_no_psi,
+             "learned_with_psi": args.model_with_psi},
+            [float(m) for m in args.margins.split(",")],
+            args.metrics_dir,
+        )
+        return 0
+
+    if args.command == "figures":
+        return _generate_figures(args)
+    return 1
+
+
+def _generate_figures(args) -> int:
+    """Build every final figure from the newest stored reports."""
+    import json
+
+    from psi_memory.evaluation import figures
+
+    def newest(pattern: str) -> dict | None:
+        matches = sorted(args.metrics_dir.glob(pattern))
+        if not matches:
+            print(f"note: no {pattern} found — skipping dependent figures")
+            return None
+        return json.loads(matches[-1].read_text(encoding="utf-8"))
+
+    heldout = newest("heldout_*.json")
+    shift = newest("param_shift_*.json")
+    lowo = newest("lowo_*.json")
+    closed = newest("closed_loop_*.json")
+
+    dataset_meta = json.loads(
+        (args.dataset / "dataset.json").read_text(encoding="utf-8"))
+    runs = dataset_meta["source_runs"]
+
+    def pick(workload: str) -> str | None:
+        candidates = [r for r, i in runs.items()
+                      if i["workload"] == workload and i["windows"] > 0]
+        return candidates[0] if candidates else None
+
+    representative = [r for r in (pick(w) for w in
+                                  ("leak", "bursty", "mixed", "file_burst",
+                                   "trace_replay", "steady")) if r]
+    figures.fig_representative_runs(args.raw, representative, args.plots_dir)
+    quiet, pressured = pick("file_burst"), pick("mixed") or pick("leak")
+    if quiet and pressured:
+        figures.fig_psi_vs_usage(args.raw, quiet, pressured,
+                                 args.plots_dir / "psi_vs_usage.png")
+    if heldout:
+        figures.fig_ablation_bars(heldout, args.plots_dir / "ablation_mae.png")
+        figures.fig_error_cdf(heldout, args.plots_dir / "error_cdf.png")
+        figures.fig_pred_vs_actual(heldout, "xgb", "with_psi",
+                                   args.plots_dir / "pred_vs_actual_xgb_with_psi.png")
+        figures.fig_per_workload(
+            heldout,
+            [("persistence", "n/a"), ("rf", "no_psi"), ("rf", "with_psi"),
+             ("xgb", "no_psi"), ("xgb", "with_psi")],
+            args.plots_dir / "per_workload_mae.png")
+        figures.fig_importances(args.metrics_dir,
+                                dataset_meta["name"],
+                                args.plots_dir / "feature_importances.png")
+    if heldout and shift and lowo:
+        figures.fig_generalization(heldout, shift, lowo,
+                                   args.plots_dir / "generalization.png")
+    if closed:
+        figures.fig_tradeoff(closed, args.plots_dir / "tradeoff_curves.png")
+    print(f"figures written to {args.plots_dir}")
+    return 0
+
+
 def main_smoke(argv: list[str] | None = None) -> int:
     """Minimal end-to-end smoke test: start a container, sample it, clean up."""
     setup_logging()

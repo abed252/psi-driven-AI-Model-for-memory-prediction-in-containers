@@ -1,0 +1,56 @@
+{
+  "session_id": "learned-20260717-161346-ffc7e4",
+  "container": "psi-cl-94e04500",
+  "cid": "6a1e282e5b3964a3c7267714fc05bb0c4ed19a8f9dc8b512014754eee9dde3d4",
+  "mode": "learned",
+  "live": true,
+  "config": {
+    "controller": {
+      "interval_s": 1.0,
+      "history_samples": 30
+    },
+    "safety": {
+      "floor_mib": 16,
+      "min_limit_mib": 32,
+      "max_limit_mib": 1024,
+      "max_step_up_mib": 128,
+      "max_step_down_mib": 64,
+      "hysteresis_mib": 4,
+      "min_write_interval_s": 5
+    },
+    "fixed": {
+      "limit_mib": 256
+    },
+    "percentile": {
+      "percentile": 95,
+      "margin_frac": 0.3
+    },
+    "senpai": {
+      "target_stall_ms": 10.0,
+      "step_frac": 0.02,
+      "min_frac_of_usage": 0.5
+    },
+    "learned": {
+      "margin_frac": 0.3
+    }
+  },
+  "model_artifact": "artifacts\\models\\final\\full__lstm__with_psi.pt",
+  "started": "2026-07-17T16:13:46",
+  "steps": 140,
+  "writes": 23,
+  "failed_writes": 0,
+  "end_reason": "target:target_exited",
+  "dry_run": false,
+  "initial_limits": {
+    "memory.max": "536870912",
+    "memory.high": "max",
+    "memory.swap.max": "536870912"
+  },
+  "finished": "2026-07-17T16:16:37",
+  "restored": {
+    "memory.max": {
+      "ok": true,
+      "error": null
+    }
+  }
+}

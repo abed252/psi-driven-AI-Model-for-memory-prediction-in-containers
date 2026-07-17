@@ -1,0 +1,17 @@
+# Final 3 runs of the full collection (lost to host sleep / task kill).
+defaults:
+  base_seed: 4000
+  interval_s: 1.0
+  image: psi-workloads:latest
+runs:
+  - workload: bursty
+    duration_s: 160
+    memory_limit: 256m
+    memory_swap: 512m
+    params: {burst_mib: 230, hold_s: 12, idle_s: 6}
+  - workload: mixed
+    repeats: 2
+    duration_s: 200
+    memory_limit: 320m
+    memory_swap: 640m
+    params: {file_mib: 200, leak_step_mib: 3, tick_s: 1.0, retouch_fraction: 0.3}

@@ -1,6 +1,75 @@
 # Progress
 
-Current phase: **Phase 4 — COMPLETE** (2026-07-16). Next: Phase 5 (full evaluation).
+Current phase: **Phase 5 — COMPLETE** (2026-07-17). **All project phases done.**
+
+## Phase 5 report (full evaluation)
+
+### Headline results (details + verdict: docs/final_report.md)
+
+1. **Closed loop — the decisive experiment**: on the bursty scenario the
+   learned no-PSI controller caused 3,186 demand-above-limit collisions and
+   an OOM kill across three margins; the identical with-PSI controller had
+   **zero adverse events at every margin** with headroom equal to or below
+   fixed/percentile. On leak, with-PSI beat no-PSI on headroom at every
+   margin at equal (perfect) safety.
+2. **Offline prediction**: PSI gains are small and inconsistent (±6 %)
+   across held-out (3 seeds, bootstrap CIs), parameter-shift, and LOWO —
+   reported as a negative result with structural explanation (label
+   saturation; usage self-predictability).
+3. LSTM became the best offline model on varied data (1.37 MAE vs RF 8.2,
+   XGB 10.4, heuristic 30.2, persistence 35.2); the p95 heuristic beat all
+   learned models under parameter shift (13.3 vs 20-24) — honest echoes of
+   Autopilot's production experience.
+
+### Data
+
+36-run varied-parameter collection (6 workloads x 2 parameter settings x 3
+repeats; slow leaks per D19; loose-limit runs per D24; new `mixed`
+cache+leak workload per D25) → dataset `full`: 3,798 windows
+(2,533/637/628 by complete runs, 24/6/6). Shift batch (6 out-of-range runs)
+→ dataset `shift` (588 windows). All quality gates PASS.
+
+### Infrastructure hardening en route
+
+Two host sleeps and a docker-daemon stall killed long batches mid-flight;
+fixed with (a) stall-proof runner (inspect retries, per-run exception
+isolation — regression-tested), (b) resumable closed-loop session index.
+Collection configs now favor sub-30-min chunks.
+
+### Files created or changed
+
+- `workloads/mixed.py` + traces `spiky.csv`, `plateau_steps.csv`
+- `src/psi_memory/evaluation/`: `stats.py` (bootstrap CI, seed aggregation),
+  `experiments.py` (heldout/param-shift/LOWO), `closed_loop.py`
+  (orchestration + outcome metrics + resumable index), `figures.py`
+  (9 figure types, dataviz-conformant)
+- CLI `psi-experiment` (heldout | param-shift | lowo | closed-loop | figures)
+- configs: `collection_full.yaml`, `collection_shift.yaml` (+ remainder
+  configs documenting the crash recovery)
+- runner resilience fixes + `test_runner_resilience.py`
+- tests: `test_evaluation.py`, `test_new_workload_files.py`,
+  `tests/integration/test_figures.py`
+- docs: `final_report.md` (complete, with verdict), README (architecture,
+  schema, reproducibility checklist), traceability rows 13/16/17 ✅,
+  decisions D24-D26, this file
+
+### Outputs
+
+- `artifacts/metrics/final/`: heldout, param_shift, lowo, closed_loop JSONs
+- `artifacts/plots/final/`: 14 figures (time series x6, psi-vs-usage,
+  ablation bars, error CDF, pred-vs-actual, per-workload, importances,
+  generalization, trade-off curves)
+- `artifacts/controller/closed_loop/`: 22 session logs + index
+
+### Remaining risks / honest limitations
+
+Single machine/kernel; synthetic workloads; one session per closed-loop
+cell (patterns consistent across margins, but no distributions); label
+saturation under tight limits (see final report §3, §5). External-trace
+download remains a documented, separate step.
+
+---
+
 
 ## Phase 4 report (closed-loop controller)
 

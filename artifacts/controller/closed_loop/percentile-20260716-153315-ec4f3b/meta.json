@@ -1,0 +1,56 @@
+{
+  "session_id": "percentile-20260716-153315-ec4f3b",
+  "container": "psi-cl-09d0407e",
+  "cid": "e3e9c0905a75f75fde89a52728aa2d3d71572e3846b2216360414f1fa5e2198f",
+  "mode": "percentile",
+  "live": true,
+  "config": {
+    "controller": {
+      "interval_s": 1.0,
+      "history_samples": 30
+    },
+    "safety": {
+      "floor_mib": 16,
+      "min_limit_mib": 32,
+      "max_limit_mib": 1024,
+      "max_step_up_mib": 128,
+      "max_step_down_mib": 64,
+      "hysteresis_mib": 4,
+      "min_write_interval_s": 5
+    },
+    "fixed": {
+      "limit_mib": 256
+    },
+    "percentile": {
+      "percentile": 95,
+      "margin_frac": 0.05
+    },
+    "senpai": {
+      "target_stall_ms": 10.0,
+      "step_frac": 0.02,
+      "min_frac_of_usage": 0.5
+    },
+    "learned": {
+      "margin_frac": 0.05
+    }
+  },
+  "model_artifact": null,
+  "started": "2026-07-16T15:33:15",
+  "steps": 140,
+  "writes": 16,
+  "failed_writes": 0,
+  "end_reason": "target:target_exited",
+  "dry_run": false,
+  "initial_limits": {
+    "memory.max": "536870912",
+    "memory.high": "max",
+    "memory.swap.max": "536870912"
+  },
+  "finished": "2026-07-16T15:36:06",
+  "restored": {
+    "memory.max": {
+      "ok": true,
+      "error": null
+    }
+  }
+}

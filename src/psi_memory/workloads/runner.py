@@ -42,17 +42,46 @@ def image_digest(image: str) -> str:
 
 
 def _wait_for_exit(container_name: str, timeout_s: float) -> bool:
-    """Poll until the container stops. Returns False if it had to be killed."""
+    """Poll until the container stops. Returns False if it had to be killed.
+
+    Transient daemon stalls (docker inspect hanging under heavy memory
+    pressure in the VM) must not kill a multi-hour batch: timeouts here are
+    logged and retried until the run's own deadline expires.
+    """
+    import subprocess
+
     deadline = time.monotonic() + timeout_s
     while time.monotonic() < deadline:
-        proc = run_docker("inspect", "-f", "{{.State.Running}}", container_name,
-                          check=False)
+        try:
+            proc = run_docker("inspect", "-f", "{{.State.Running}}",
+                              container_name, check=False, timeout=30)
+        except subprocess.TimeoutExpired:
+            log.warning("docker inspect stalled for %s; retrying", container_name)
+            time.sleep(5.0)
+            continue
         if proc.returncode != 0 or proc.stdout.strip() != "true":
             return True
         time.sleep(1.0)
     log.warning("%s exceeded timeout, stopping it", container_name)
-    run_docker("stop", "-t", "5", container_name, check=False)
+    _force_remove(container_name, stop_first=True)
     return False
+
+
+def _force_remove(container_name: str, stop_first: bool = False) -> None:
+    """Best-effort stop/remove that survives daemon stalls."""
+    import subprocess
+
+    for attempt in range(3):
+        try:
+            if stop_first:
+                run_docker("stop", "-t", "5", container_name, check=False,
+                           timeout=60)
+            run_docker("rm", "-f", container_name, check=False, timeout=60)
+            return
+        except subprocess.TimeoutExpired:
+            log.warning("docker stop/rm stalled for %s (attempt %d)",
+                        container_name, attempt + 1)
+            time.sleep(10.0)
 
 
 def execute_run(
@@ -108,7 +137,7 @@ def execute_run(
             run_docker("logs", container, check=False).stdout, encoding="utf-8"
         )
     finally:
-        run_docker("rm", "-f", container, check=False)
+        _force_remove(container)
 
     last_events = _last_sample_events(out_dir / "samples.jsonl")
     meta = {
@@ -169,7 +198,12 @@ def execute_batch(config: BatchConfig, data_dir: Path = Path("data/raw")) -> lis
     for spec in config.runs:
         try:
             metas.append(execute_run(spec, data_dir, config.image, validation_id))
-        except DockerError:
+        except KeyboardInterrupt:
+            log.warning("batch interrupted; writing manifest for completed runs")
+            break
+        except Exception:
+            # One bad run (docker stall, transient error) must never lose the
+            # rest of an overnight batch — log it in full and continue.
             log.exception("run failed (workload=%s entry=%d repeat=%d); continuing",
                           spec.workload, spec.entry_index, spec.repeat_index)
     manifest = {

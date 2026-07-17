@@ -1,0 +1,92 @@
+# FULL data collection for the Phase 5 evaluation (~2 h total).
+# Design goals (docs/decisions.md D19, D24):
+# - parameter variety WITHIN each workload (two entries per workload);
+# - slow leaks so pressure phases overlap valid windows (D19);
+# - loose-limit leak/mixed runs so future-peak labels are not pinned at the
+#   limit and models can learn "demand will exceed the current limit";
+# - both pressured and non-pressured regimes for the quality gates.
+defaults:
+  base_seed: 2000
+  interval_s: 1.0
+  image: psi-workloads:latest
+
+runs:
+  - workload: steady
+    repeats: 3
+    duration_s: 150
+    memory_limit: 256m
+    memory_swap: 512m
+    params: {working_set_mib: 64, churn_mib: 4}
+  - workload: steady
+    repeats: 3
+    duration_s: 150
+    memory_limit: 256m
+    memory_swap: 512m
+    params: {working_set_mib: 120, churn_mib: 8}
+
+  - workload: file_burst
+    repeats: 3
+    duration_s: 150
+    memory_limit: 256m
+    memory_swap: 512m
+    params: {file_mib: 200, pause_s: 1.0}
+  - workload: file_burst
+    repeats: 3
+    duration_s: 150
+    memory_limit: 192m
+    memory_swap: 384m
+    params: {file_mib: 300, pause_s: 0.5}
+
+  # Tight + slow: PSI-rich pressure phase (D19).
+  - workload: leak
+    repeats: 3
+    duration_s: 260
+    memory_limit: 192m
+    memory_swap: 384m
+    params: {step_mib: 2, tick_s: 1.0, retouch_fraction: 0.3}
+  # Loose: growth unpinned by the limit, labels reflect real demand.
+  - workload: leak
+    repeats: 3
+    duration_s: 180
+    memory_limit: 640m
+    memory_swap: 1280m
+    params: {step_mib: 3, tick_s: 1.0, retouch_fraction: 0.2}
+
+  - workload: bursty
+    repeats: 3
+    duration_s: 160
+    memory_limit: 192m
+    memory_swap: 384m
+    params: {burst_mib: 200, hold_s: 8, idle_s: 8}
+  - workload: bursty
+    repeats: 3
+    duration_s: 160
+    memory_limit: 256m
+    memory_swap: 512m
+    params: {burst_mib: 230, hold_s: 12, idle_s: 6}
+
+  - workload: trace_replay
+    repeats: 3
+    duration_s: 140
+    memory_limit: 320m
+    memory_swap: 640m
+    params: {trace_file: /app/traces/example_trace.csv, scale: 1.2, time_scale: 1.3}
+  - workload: trace_replay
+    repeats: 3
+    duration_s: 130
+    memory_limit: 320m
+    memory_swap: 640m
+    params: {trace_file: /app/traces/spiky.csv, scale: 1.0}
+
+  - workload: mixed
+    repeats: 3
+    duration_s: 220
+    memory_limit: 256m
+    memory_swap: 512m
+    params: {file_mib: 150, leak_step_mib: 2, tick_s: 1.0, retouch_fraction: 0.3}
+  - workload: mixed
+    repeats: 3
+    duration_s: 200
+    memory_limit: 320m
+    memory_swap: 640m
+    params: {file_mib: 200, leak_step_mib: 3, tick_s: 1.0, retouch_fraction: 0.3}

@@ -15,6 +15,7 @@ WORKLOAD_SCRIPTS = {
     "file_burst": "file_burst.py",
     "bursty": "bursty.py",
     "trace_replay": "trace_replay.py",
+    "mixed": "mixed.py",
 }
 
 

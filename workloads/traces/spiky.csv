@@ -1,0 +1,19 @@
+# Spiky synthetic trace: low base with sharp recurring spikes (offset_s,target_mib)
+0,20
+14,20
+16,150
+20,150
+22,25
+38,25
+40,180
+44,180
+46,30
+62,30
+64,140
+70,140
+72,20
+90,20
+92,200
+96,200
+98,25
+115,25

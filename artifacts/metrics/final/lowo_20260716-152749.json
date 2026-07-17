@@ -1,0 +1,715 @@
+{
+  "experiment": "leave_one_workload_out",
+  "dataset": "data\\processed\\full",
+  "folds": [
+    {
+      "held_out_workload": "bursty",
+      "n_train_windows": 3196,
+      "n_test_windows": 602,
+      "results": [
+        {
+          "model": "rf",
+          "variant": "no_psi",
+          "n": 602,
+          "mae_mib": 35.17265623626713,
+          "rmse_mib": 58.99024331822606,
+          "underprediction_rate": 0.6495016611295681,
+          "per_workload": {
+            "bursty": {
+              "n": 602,
+              "mae_mib": 35.17265623626713,
+              "rmse_mib": 58.99024331822606
+            }
+          },
+          "normalized_mae": 0.16239743550562472,
+          "bootstrap_ci": {
+            "mae_mib": 35.17265623626713,
+            "ci_low": 31.463361582123696,
+            "ci_high": 39.07904465406211,
+            "n": 602,
+            "n_boot": 2000,
+            "alpha": 0.05
+          }
+        },
+        {
+          "model": "rf",
+          "variant": "with_psi",
+          "n": 602,
+          "mae_mib": 34.208877572606795,
+          "rmse_mib": 57.820119782274176,
+          "underprediction_rate": 0.6561461794019934,
+          "per_workload": {
+            "bursty": {
+              "n": 602,
+              "mae_mib": 34.208877572606795,
+              "rmse_mib": 57.820119782274176
+            }
+          },
+          "normalized_mae": 0.15794752469075451,
+          "bootstrap_ci": {
+            "mae_mib": 34.208877572606795,
+            "ci_low": 30.551392747642648,
+            "ci_high": 38.02042445175585,
+            "n": 602,
+            "n_boot": 2000,
+            "alpha": 0.05
+          }
+        },
+        {
+          "model": "xgb",
+          "variant": "no_psi",
+          "n": 602,
+          "mae_mib": 64.97921876495462,
+          "rmse_mib": 86.4443852101599,
+          "underprediction_rate": 0.8737541528239202,
+          "per_workload": {
+            "bursty": {
+              "n": 602,
+              "mae_mib": 64.97921876495462,
+              "rmse_mib": 86.4443852101599
+            }
+          },
+          "normalized_mae": 0.3000188105698647,
+          "bootstrap_ci": {
+            "mae_mib": 64.97921876495462,
+            "ci_low": 60.3456937915067,
+            "ci_high": 69.51588763762946,
+            "n": 602,
+            "n_boot": 2000,
+            "alpha": 0.05
+          }
+        },
+        {
+          "model": "xgb",
+          "variant": "with_psi",
+          "n": 602,
+          "mae_mib": 62.01570045750007,
+          "rmse_mib": 80.75997014120912,
+          "underprediction_rate": 0.6561461794019934,
+          "per_workload": {
+            "bursty": {
+              "n": 602,
+              "mae_mib": 62.01570045750007,
+              "rmse_mib": 80.75997014120912
+            }
+          },
+          "normalized_mae": 0.2863358015309185,
+          "bootstrap_ci": {
+            "mae_mib": 62.01570045750007,
+            "ci_low": 57.82469732816829,
+            "ci_high": 66.17135572560206,
+            "n": 602,
+            "n_boot": 2000,
+            "alpha": 0.05
+          }
+        },
+        {
+          "model": "persistence",
+          "variant": "n/a",
+          "n": 602,
+          "mae_mib": 89.30925560631229,
+          "rmse_mib": 136.50702814510134,
+          "underprediction_rate": 0.867109634551495,
+          "per_workload": {
+            "bursty": {
+              "n": 602,
+              "mae_mib": 89.30925560631229,
+              "rmse_mib": 136.50702814510134
+            }
+          }
+        }
+      ]
+    },
+    {
+      "held_out_workload": "file_burst",
+      "n_train_windows": 3242,
+      "n_test_windows": 556,
+      "results": [
+        {
+          "model": "rf",
+          "variant": "no_psi",
+          "n": 556,
+          "mae_mib": 30.379093055150374,
+          "rmse_mib": 39.68021881405763,
+          "underprediction_rate": 0.9928057553956835,
+          "per_workload": {
+            "file_burst": {
+              "n": 556,
+              "mae_mib": 30.379093055150374,
+              "rmse_mib": 39.68021881405763
+            }
+          },
+          "normalized_mae": 0.14951042649916174,
+          "bootstrap_ci": {
+            "mae_mib": 30.379093055150374,
+            "ci_low": 28.17802663619244,
+            "ci_high": 32.58271242101649,
+            "n": 556,
+            "n_boot": 2000,
+            "alpha": 0.05
+          }
+        },
+        {
+          "model": "rf",
+          "variant": "with_psi",
+          "n": 556,
+          "mae_mib": 23.280132098301983,
+          "rmse_mib": 26.205715209503108,
+          "underprediction_rate": 0.9928057553956835,
+          "per_workload": {
+            "file_burst": {
+              "n": 556,
+              "mae_mib": 23.280132098301983,
+              "rmse_mib": 26.205715209503108
+            }
+          },
+          "normalized_mae": 0.11457295557359838,
+          "bootstrap_ci": {
+            "mae_mib": 23.280132098301983,
+            "ci_low": 22.28043143063392,
+            "ci_high": 24.29577373095847,
+            "n": 556,
+            "n_boot": 2000,
+            "alpha": 0.05
+          }
+        },
+        {
+          "model": "xgb",
+          "variant": "no_psi",
+          "n": 556,
+          "mae_mib": 20.903839001552665,
+          "rmse_mib": 27.279543689293618,
+          "underprediction_rate": 0.0,
+          "per_workload": {
+            "file_burst": {
+              "n": 556,
+              "mae_mib": 20.903839001552665,
+              "rmse_mib": 27.279543689293618
+            }
+          },
+          "normalized_mae": 0.10287805099771041,
+          "bootstrap_ci": {
+            "mae_mib": 20.903839001552665,
+            "ci_low": 19.427848636846747,
+            "ci_high": 22.442580474880963,
+            "n": 556,
+            "n_boot": 2000,
+            "alpha": 0.05
+          }
+        },
+        {
+          "model": "xgb",
+          "variant": "with_psi",
+          "n": 556,
+          "mae_mib": 20.335421445558396,
+          "rmse_mib": 26.521032673944962,
+          "underprediction_rate": 0.0,
+          "per_workload": {
+            "file_burst": {
+              "n": 556,
+              "mae_mib": 20.335421445558396,
+              "rmse_mib": 26.521032673944962
+            }
+          },
+          "normalized_mae": 0.10008058923438412,
+          "bootstrap_ci": {
+            "mae_mib": 20.335421445558396,
+            "ci_low": 18.89115208550323,
+            "ci_high": 21.818779227716462,
+            "n": 556,
+            "n_boot": 2000,
+            "alpha": 0.05
+          }
+        },
+        {
+          "model": "persistence",
+          "variant": "n/a",
+          "n": 556,
+          "mae_mib": 0.2290495728417266,
+          "rmse_mib": 0.3523093897250122,
+          "underprediction_rate": 0.9496402877697842,
+          "per_workload": {
+            "file_burst": {
+              "n": 556,
+              "mae_mib": 0.2290495728417266,
+              "rmse_mib": 0.3523093897250122
+            }
+          }
+        }
+      ]
+    },
+    {
+      "held_out_workload": "leak",
+      "n_train_windows": 3071,
+      "n_test_windows": 727,
+      "results": [
+        {
+          "model": "rf",
+          "variant": "no_psi",
+          "n": 727,
+          "mae_mib": 74.39827035814724,
+          "rmse_mib": 93.80786048741943,
+          "underprediction_rate": 0.8610729023383769,
+          "per_workload": {
+            "leak": {
+              "n": 727,
+              "mae_mib": 74.39827035814724,
+              "rmse_mib": 93.80786048741943
+            }
+          },
+          "normalized_mae": 0.2695108533466616,
+          "bootstrap_ci": {
+            "mae_mib": 74.39827035814724,
+            "ci_low": 70.18806594241532,
+            "ci_high": 78.63417538191004,
+            "n": 727,
+            "n_boot": 2000,
+            "alpha": 0.05
+          }
+        },
+        {
+          "model": "rf",
+          "variant": "with_psi",
+          "n": 727,
+          "mae_mib": 74.31702436570065,
+          "rmse_mib": 93.78793809759816,
+          "underprediction_rate": 0.8541953232462174,
+          "per_workload": {
+            "leak": {
+              "n": 727,
+              "mae_mib": 74.31702436570065,
+              "rmse_mib": 93.78793809759816
+            }
+          },
+          "normalized_mae": 0.2692165363329747,
+          "bootstrap_ci": {
+            "mae_mib": 74.31702436570065,
+            "ci_low": 70.11376808980005,
+            "ci_high": 78.56842199320751,
+            "n": 727,
+            "n_boot": 2000,
+            "alpha": 0.05
+          }
+        },
+        {
+          "model": "xgb",
+          "variant": "no_psi",
+          "n": 727,
+          "mae_mib": 55.95269664150484,
+          "rmse_mib": 80.70420648863161,
+          "underprediction_rate": 0.8569463548830811,
+          "per_workload": {
+            "leak": {
+              "n": 727,
+              "mae_mib": 55.95269664150484,
+              "rmse_mib": 80.70420648863161
+            }
+          },
+          "normalized_mae": 0.20269098927039078,
+          "bootstrap_ci": {
+            "mae_mib": 55.95269664150484,
+            "ci_low": 51.73968172217661,
+            "ci_high": 60.29609266121089,
+            "n": 727,
+            "n_boot": 2000,
+            "alpha": 0.05
+          }
+        },
+        {
+          "model": "xgb",
+          "variant": "with_psi",
+          "n": 727,
+          "mae_mib": 59.05183721277376,
+          "rmse_mib": 84.79359973259834,
+          "underprediction_rate": 0.8679504814305364,
+          "per_workload": {
+            "leak": {
+              "n": 727,
+              "mae_mib": 59.05183721277376,
+              "rmse_mib": 84.79359973259834
+            }
+          },
+          "normalized_mae": 0.2139177559140656,
+          "bootstrap_ci": {
+            "mae_mib": 59.05183721277376,
+            "ci_low": 54.698223292417666,
+            "ci_high": 63.525125414600396,
+            "n": 727,
+            "n_boot": 2000,
+            "alpha": 0.05
+          }
+        },
+        {
+          "model": "persistence",
+          "variant": "n/a",
+          "n": 727,
+          "mae_mib": 55.8290814133425,
+          "rmse_mib": 67.55620843831564,
+          "underprediction_rate": 0.9834938101788171,
+          "per_workload": {
+            "leak": {
+              "n": 727,
+              "mae_mib": 55.8290814133425,
+              "rmse_mib": 67.55620843831564
+            }
+          }
+        }
+      ]
+    },
+    {
+      "held_out_workload": "mixed",
+      "n_train_windows": 2879,
+      "n_test_windows": 919,
+      "results": [
+        {
+          "model": "rf",
+          "variant": "no_psi",
+          "n": 919,
+          "mae_mib": 101.38919224608823,
+          "rmse_mib": 112.6854454004175,
+          "underprediction_rate": 0.485310119695321,
+          "per_workload": {
+            "mixed": {
+              "n": 919,
+              "mae_mib": 101.38919224608823,
+              "rmse_mib": 112.6854454004175
+            }
+          },
+          "normalized_mae": 0.3545797768602619,
+          "bootstrap_ci": {
+            "mae_mib": 101.38919224608823,
+            "ci_low": 98.23049272949831,
+            "ci_high": 104.52377887433838,
+            "n": 919,
+            "n_boot": 2000,
+            "alpha": 0.05
+          }
+        },
+        {
+          "model": "rf",
+          "variant": "with_psi",
+          "n": 919,
+          "mae_mib": 98.31793992261902,
+          "rmse_mib": 109.01482061471451,
+          "underprediction_rate": 0.485310119695321,
+          "per_workload": {
+            "mixed": {
+              "n": 919,
+              "mae_mib": 98.31793992261902,
+              "rmse_mib": 109.01482061471451
+            }
+          },
+          "normalized_mae": 0.3438389479867654,
+          "bootstrap_ci": {
+            "mae_mib": 98.31793992261902,
+            "ci_low": 95.29263569432551,
+            "ci_high": 101.30267867932069,
+            "n": 919,
+            "n_boot": 2000,
+            "alpha": 0.05
+          }
+        },
+        {
+          "model": "xgb",
+          "variant": "no_psi",
+          "n": 919,
+          "mae_mib": 117.58583257299513,
+          "rmse_mib": 143.12489979933852,
+          "underprediction_rate": 0.49510337323177367,
+          "per_workload": {
+            "mixed": {
+              "n": 919,
+              "mae_mib": 117.58583257299513,
+              "rmse_mib": 143.12489979933852
+            }
+          },
+          "normalized_mae": 0.4112229060318738,
+          "bootstrap_ci": {
+            "mae_mib": 117.58583257299513,
+            "ci_low": 112.36826777785076,
+            "ci_high": 122.66034669844966,
+            "n": 919,
+            "n_boot": 2000,
+            "alpha": 0.05
+          }
+        },
+        {
+          "model": "xgb",
+          "variant": "with_psi",
+          "n": 919,
+          "mae_mib": 120.37220311709665,
+          "rmse_mib": 147.3527278703874,
+          "underprediction_rate": 0.49510337323177367,
+          "per_workload": {
+            "mixed": {
+              "n": 919,
+              "mae_mib": 120.37220311709665,
+              "rmse_mib": 147.3527278703874
+            }
+          },
+          "normalized_mae": 0.4209674421494859,
+          "bootstrap_ci": {
+            "mae_mib": 120.37220311709665,
+            "ci_low": 114.92252694919657,
+            "ci_high": 125.53902298467592,
+            "n": 919,
+            "n_boot": 2000,
+            "alpha": 0.05
+          }
+        },
+        {
+          "model": "persistence",
+          "variant": "n/a",
+          "n": 919,
+          "mae_mib": 2.2308427978781284,
+          "rmse_mib": 12.980471436169612,
+          "underprediction_rate": 0.9640914036996736,
+          "per_workload": {
+            "mixed": {
+              "n": 919,
+              "mae_mib": 2.2308427978781284,
+              "rmse_mib": 12.980471436169612
+            }
+          }
+        }
+      ]
+    },
+    {
+      "held_out_workload": "steady",
+      "n_train_windows": 3256,
+      "n_test_windows": 542,
+      "results": [
+        {
+          "model": "rf",
+          "variant": "no_psi",
+          "n": 542,
+          "mae_mib": 59.47905955722339,
+          "rmse_mib": 68.58212420432055,
+          "underprediction_rate": 0.0,
+          "per_workload": {
+            "steady": {
+              "n": 542,
+              "mae_mib": 59.47905955722339,
+              "rmse_mib": 68.58212420432055
+            }
+          },
+          "normalized_mae": 0.583595811978753,
+          "bootstrap_ci": {
+            "mae_mib": 59.47905955722339,
+            "ci_low": 56.68413159821914,
+            "ci_high": 62.509285568216235,
+            "n": 542,
+            "n_boot": 2000,
+            "alpha": 0.05
+          }
+        },
+        {
+          "model": "rf",
+          "variant": "with_psi",
+          "n": 542,
+          "mae_mib": 62.00244608520438,
+          "rmse_mib": 69.9420815778793,
+          "underprediction_rate": 0.0,
+          "per_workload": {
+            "steady": {
+              "n": 542,
+              "mae_mib": 62.00244608520438,
+              "rmse_mib": 69.9420815778793
+            }
+          },
+          "normalized_mae": 0.6083547409311607,
+          "bootstrap_ci": {
+            "mae_mib": 62.00244608520438,
+            "ci_low": 59.33087447639984,
+            "ci_high": 64.87977273467462,
+            "n": 542,
+            "n_boot": 2000,
+            "alpha": 0.05
+          }
+        },
+        {
+          "model": "xgb",
+          "variant": "no_psi",
+          "n": 542,
+          "mae_mib": 81.53967361168668,
+          "rmse_mib": 82.00195897280214,
+          "underprediction_rate": 0.0,
+          "per_workload": {
+            "steady": {
+              "n": 542,
+              "mae_mib": 81.53967361168668,
+              "rmse_mib": 82.00195897280214
+            }
+          },
+          "normalized_mae": 0.8000498391221742,
+          "bootstrap_ci": {
+            "mae_mib": 81.53967361168668,
+            "ci_low": 80.79259693244288,
+            "ci_high": 82.24699028409276,
+            "n": 542,
+            "n_boot": 2000,
+            "alpha": 0.05
+          }
+        },
+        {
+          "model": "xgb",
+          "variant": "with_psi",
+          "n": 542,
+          "mae_mib": 80.15008086032093,
+          "rmse_mib": 80.52677821445907,
+          "underprediction_rate": 0.0,
+          "per_workload": {
+            "steady": {
+              "n": 542,
+              "mae_mib": 80.15008086032093,
+              "rmse_mib": 80.52677821445907
+            }
+          },
+          "normalized_mae": 0.7864154522288697,
+          "bootstrap_ci": {
+            "mae_mib": 80.15008086032093,
+            "ci_low": 79.47366139176147,
+            "ci_high": 80.79603716649693,
+            "n": 542,
+            "n_boot": 2000,
+            "alpha": 0.05
+          }
+        },
+        {
+          "model": "persistence",
+          "variant": "n/a",
+          "n": 542,
+          "mae_mib": 0.06804946955719557,
+          "rmse_mib": 0.11167460154892707,
+          "underprediction_rate": 0.6937269372693727,
+          "per_workload": {
+            "steady": {
+              "n": 542,
+              "mae_mib": 0.06804946955719557,
+              "rmse_mib": 0.11167460154892707
+            }
+          }
+        }
+      ]
+    },
+    {
+      "held_out_workload": "trace_replay",
+      "n_train_windows": 3346,
+      "n_test_windows": 452,
+      "results": [
+        {
+          "model": "rf",
+          "variant": "no_psi",
+          "n": 452,
+          "mae_mib": 88.93971382861795,
+          "rmse_mib": 109.74649710503962,
+          "underprediction_rate": 0.12389380530973451,
+          "per_workload": {
+            "trace_replay": {
+              "n": 452,
+              "mae_mib": 88.93971382861795,
+              "rmse_mib": 109.74649710503962
+            }
+          },
+          "normalized_mae": 0.557040582659082,
+          "bootstrap_ci": {
+            "mae_mib": 88.93971382861795,
+            "ci_low": 83.23227726334352,
+            "ci_high": 94.49827317960997,
+            "n": 452,
+            "n_boot": 2000,
+            "alpha": 0.05
+          }
+        },
+        {
+          "model": "rf",
+          "variant": "with_psi",
+          "n": 452,
+          "mae_mib": 88.74923586154053,
+          "rmse_mib": 110.29529686296885,
+          "underprediction_rate": 0.12389380530973451,
+          "per_workload": {
+            "trace_replay": {
+              "n": 452,
+              "mae_mib": 88.74923586154053,
+              "rmse_mib": 110.29529686296885
+            }
+          },
+          "normalized_mae": 0.5558475952612476,
+          "bootstrap_ci": {
+            "mae_mib": 88.74923586154053,
+            "ci_low": 82.8796077119999,
+            "ci_high": 94.34017889963778,
+            "n": 452,
+            "n_boot": 2000,
+            "alpha": 0.05
+          }
+        },
+        {
+          "model": "xgb",
+          "variant": "no_psi",
+          "n": 452,
+          "mae_mib": 89.41870132378773,
+          "rmse_mib": 113.3881118328286,
+          "underprediction_rate": 0.12389380530973451,
+          "per_workload": {
+            "trace_replay": {
+              "n": 452,
+              "mae_mib": 89.41870132378773,
+              "rmse_mib": 113.3881118328286
+            }
+          },
+          "normalized_mae": 0.5600405414166503,
+          "bootstrap_ci": {
+            "mae_mib": 89.41870132378773,
+            "ci_low": 83.15214446034052,
+            "ci_high": 95.44457151784306,
+            "n": 452,
+            "n_boot": 2000,
+            "alpha": 0.05
+          }
+        },
+        {
+          "model": "xgb",
+          "variant": "with_psi",
+          "n": 452,
+          "mae_mib": 91.13689177859146,
+          "rmse_mib": 116.34968589841513,
+          "underprediction_rate": 0.12389380530973451,
+          "per_workload": {
+            "trace_replay": {
+              "n": 452,
+              "mae_mib": 91.13689177859146,
+              "rmse_mib": 116.34968589841513
+            }
+          },
+          "normalized_mae": 0.570801783733074,
+          "bootstrap_ci": {
+            "mae_mib": 91.13689177859146,
+            "ci_low": 84.59091853884469,
+            "ci_high": 97.42477158867152,
+            "n": 452,
+            "n_boot": 2000,
+            "alpha": 0.05
+          }
+        },
+        {
+          "model": "persistence",
+          "variant": "n/a",
+          "n": 452,
+          "mae_mib": 70.98450463219027,
+          "rmse_mib": 97.97707951083505,
+          "underprediction_rate": 0.6172566371681416,
+          "per_workload": {
+            "trace_replay": {
+              "n": 452,
+              "mae_mib": 70.98450463219027,
+              "rmse_mib": 97.97707951083505
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "created": "2026-07-16T15:27:49"
+}

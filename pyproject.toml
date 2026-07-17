@@ -35,6 +35,7 @@ psi-build-dataset = "psi_memory.cli:main_build_dataset"
 psi-train = "psi_memory.cli:main_train"
 psi-ablate = "psi_memory.cli:main_ablate"
 psi-control = "psi_memory.cli:main_control"
+psi-experiment = "psi_memory.cli:main_experiment"
 
 [tool.setuptools.packages.find]
 where = ["src"]

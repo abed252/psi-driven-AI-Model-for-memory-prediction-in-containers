@@ -1,0 +1,39 @@
+# Parameter-SHIFT test batch: parameters deliberately outside the ranges of
+# configs/collection_full.yaml. Models trained on the full dataset are
+# evaluated on these runs without retraining (generalization experiment 3).
+defaults:
+  base_seed: 7000
+  interval_s: 1.0
+  image: psi-workloads:latest
+
+runs:
+  - workload: steady
+    duration_s: 150
+    memory_limit: 320m
+    memory_swap: 640m
+    params: {working_set_mib: 180, churn_mib: 12}
+  - workload: file_burst
+    duration_s: 150
+    memory_limit: 224m
+    memory_swap: 448m
+    params: {file_mib: 260, pause_s: 2.0}
+  - workload: leak
+    duration_s: 200
+    memory_limit: 256m
+    memory_swap: 512m
+    params: {step_mib: 4, tick_s: 1.0, retouch_fraction: 0.5}
+  - workload: bursty
+    duration_s: 160
+    memory_limit: 224m
+    memory_swap: 448m
+    params: {burst_mib: 180, hold_s: 5, idle_s: 12}
+  - workload: trace_replay
+    duration_s: 140
+    memory_limit: 320m
+    memory_swap: 640m
+    params: {trace_file: /app/traces/plateau_steps.csv, scale: 1.0}
+  - workload: mixed
+    duration_s: 200
+    memory_limit: 288m
+    memory_swap: 576m
+    params: {file_mib: 120, leak_step_mib: 4, tick_s: 1.0, retouch_fraction: 0.4}

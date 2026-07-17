@@ -1,0 +1,56 @@
+{
+  "session_id": "senpai-20260717-155634-7eb8dd",
+  "container": "psi-cl-32b57290",
+  "cid": "11557fec54425b7f48dd767e0a05cc22a822822e6919bcdf53a30df275f01d30",
+  "mode": "senpai",
+  "live": true,
+  "config": {
+    "controller": {
+      "interval_s": 1.0,
+      "history_samples": 30
+    },
+    "safety": {
+      "floor_mib": 16,
+      "min_limit_mib": 32,
+      "max_limit_mib": 1024,
+      "max_step_up_mib": 128,
+      "max_step_down_mib": 64,
+      "hysteresis_mib": 4,
+      "min_write_interval_s": 5
+    },
+    "fixed": {
+      "limit_mib": 256
+    },
+    "percentile": {
+      "percentile": 95,
+      "margin_frac": 0.15
+    },
+    "senpai": {
+      "target_stall_ms": 10.0,
+      "step_frac": 0.02,
+      "min_frac_of_usage": 0.5
+    },
+    "learned": {
+      "margin_frac": 0.15
+    }
+  },
+  "model_artifact": null,
+  "started": "2026-07-17T15:56:34",
+  "steps": 141,
+  "writes": 1,
+  "failed_writes": 0,
+  "end_reason": "target:target_exited",
+  "dry_run": false,
+  "initial_limits": {
+    "memory.max": "536870912",
+    "memory.high": "max",
+    "memory.swap.max": "536870912"
+  },
+  "finished": "2026-07-17T15:59:26",
+  "restored": {
+    "memory.high": {
+      "ok": false,
+      "error": "docker run --rm --privileged --cgroupns=host -v /sys/fs/cgroup:/host/cgroup alpine:3.20 sh -c echo max > /host/cgroup/docker/11557fec54425b7f48dd767e0a05cc22a822822e6919bcdf53a30df275f01d30/memory.high failed (rc=1): sh: can't create /host/cgroup/docker/11557fec54425b7f48dd767e0a05cc22a822822e6919bcdf53a30df275f01d30/memory.high: nonexistent directory"
+    }
+  }
+}

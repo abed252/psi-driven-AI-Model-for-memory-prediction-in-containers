@@ -7,13 +7,16 @@ Course 236502 — Project in Artificial Intelligence, Technion.
 Proposal: [`docs/proposal/PROPOSAL_document_v2.pdf`](docs/proposal/PROPOSAL_document_v2.pdf)
 · Execution contract: [`docs/PROJECT_EXECUTION_SPEC.md`](docs/PROJECT_EXECUTION_SPEC.md)
 
-**Status: Phase 4 complete** — the closed-loop controller now runs in four
-interchangeable modes (fixed / Autopilot-style percentile / Senpai-style
-`memory.high` / learned model artifact) with mandatory safety rules and full
-per-decision logging, on top of the model ladder (Phase 3), the leakage-safe
-dataset pipeline (Phase 2), workloads + collector + calibration (Phase 1),
-and environment validation (Phase 0). Remaining: Phase 5 — the large
-varied-parameter collection and full evaluation.
+**Status: ALL PHASES COMPLETE (0-5).** The full evaluation ran on a 36-run
+varied-parameter collection (3,798 windows): multi-seed PSI ablation at
+every model rung with bootstrap CIs, parameter-shift and
+leave-one-workload-out generalization, error CDFs, and a 22-session live
+closed-loop comparison across safety margins. **Headline finding: PSI does
+not measurably improve offline peak-usage prediction, but it decisively
+improves closed-loop limit control — the no-PSI learned controller caused
+3,186 limit collisions and an OOM kill on dynamic workloads where the
+identical with-PSI controller had zero, at equal or lower headroom.** Full
+analysis and verdict: [`docs/final_report.md`](docs/final_report.md).
 
 ## What this project does
 
@@ -203,6 +206,67 @@ Every decision is logged to
 prediction, requested vs applied value, clip reasons, rate-limit state,
 previous limit, safety config, model identity, and write outcome — the input
 for Phase 5's closed-loop comparison.
+
+## Architecture
+
+```
+                 Windows host (Python 3.11, this repo)
+  psi-run ──────► docker run workload containers ─┐
+  psi-control ──► docker update memory.max        │   Docker Desktop WSL2 VM
+  psi-dashboard ─► reads the same sampler stream  │  ┌───────────────────────┐
+                                                  ├─►│ workload container     │
+        JSONL over stdout                         │  │  /sys/fs/cgroup (own)  │
+  ◄───────────────────────── sampler sidecar ─────┘  │ sampler sidecar        │
+  data/raw/<run_id>/samples.jsonl                    │  --cgroupns=host, ro   │
+        │                                            │  /host/cgroup/docker/  │
+        ▼                                            │  <container-id>/       │
+  psi-build-dataset ─► data/processed/<name>/        └───────────────────────┘
+        │                 tabular.csv + sequences.npz + splits.json
+        ▼
+  psi-train / psi-ablate / psi-experiment ─► artifacts/{models,metrics,plots}
+        │
+        ▼
+  psi-control --mode learned --model <artifact>  (closes the loop)
+```
+
+## Data schema
+
+Raw (`data/raw/<run_id>/`): `samples.jsonl` — one JSON object per second with
+`mono`, `wall`, `current`, `max`, `high`, `swap_current`, `swap_max`,
+`pressure.some/full{avg10,avg60,avg300,total}`, `events{oom,oom_kill,max,…}`,
+`stat{anon,file,…}`, `missing[]`; plus `meta.json` (run provenance) and
+`workload.log`.
+
+Processed (`data/processed/<name>/`): `tabular.csv` — per window: `run_id`,
+`workload`, `window_end_t`, 16 signals x 6 aggregates
+(`<signal>__{last,mean,max,std,slope,delta}`), baseline columns
+(`hist_current_{last,max,p95}`), label `y_mib`, `split`; `sequences.npz` —
+`X (n, H, 16)`, `y`, `run_id`, `end_t`, `signals`; `splits.json`,
+`dataset.json` (schema + provenance), `data_quality.json`.
+
+Controller sessions (`artifacts/controller/<session>/`): `decisions.jsonl`
+(one record per step: observed metrics, prediction, requested/applied,
+clip reasons, write outcome) + `meta.json`.
+
+## Reproducibility checklist
+
+1. `psi-validate-env` passes (report saved with `validation_id`).
+2. `docker build -f docker\Dockerfile.workloads -t psi-workloads:latest .`
+3. `psi-run --config configs\calibration.yaml` then `psi-calibrate` → PASS.
+4. `psi-run --config configs\collection_full.yaml` (~2 h) and
+   `psi-run --config configs\collection_shift.yaml` (~20 min).
+5. `psi-build-dataset --out data\processed\full --batch-manifest <full batch>`
+   and `...\shift --batch-manifest <shift batch>` → quality gates PASS.
+6. `psi-experiment heldout --dataset data\processed\full` (multi-seed ablation)
+7. `psi-experiment param-shift --train-dataset ...\full --shift-dataset ...\shift`
+8. `psi-experiment lowo --dataset data\processed\full`
+9. `psi-experiment closed-loop --model-no-psi <artifact> --model-with-psi <artifact>`
+10. `psi-experiment figures --dataset data\processed\full`
+11. `pytest` — all green.
+
+Everything is deterministic from the config seeds (`derive_seed`), pinned
+dependencies (`requirements\lock.txt`), and recorded image digests; dataset
+and model artifacts carry their full provenance.
 
 ## Repository map
 

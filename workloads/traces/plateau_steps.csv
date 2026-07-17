@@ -1,0 +1,13 @@
+# Staircase synthetic trace: stepped plateaus up then down (offset_s,target_mib)
+0,30
+20,30
+22,90
+42,90
+44,160
+64,160
+66,220
+86,220
+88,120
+108,120
+110,50
+130,50

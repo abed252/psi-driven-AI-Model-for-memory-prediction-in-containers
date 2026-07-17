@@ -229,10 +229,16 @@ def train_lstm(dataset_dir: Path, variant: str, config: dict,
             data.frame["val"], baselines.persistence_predict(data.frame["val"])),
     }
     if include_test:
-        result["test"] = metrics.evaluate(data.frame["test"], predict("test"))
+        test_pred = predict("test")
+        result["test"] = metrics.evaluate(data.frame["test"], test_pred)
         result["test_persistence"] = metrics.evaluate(
             data.frame["test"],
             baselines.persistence_predict(data.frame["test"]))
+        result["test_predictions"] = {
+            "y_true": data.frame["test"]["y_mib"].tolist(),
+            "y_pred": [float(v) for v in test_pred],
+            "workload": data.frame["test"]["workload"].tolist(),
+        }
 
     models_dir.mkdir(parents=True, exist_ok=True)
     artifact_path = models_dir / f"{dataset_dir.name}__lstm__{variant}.pt"

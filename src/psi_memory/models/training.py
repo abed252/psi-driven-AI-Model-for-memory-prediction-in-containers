@@ -94,10 +94,15 @@ def train_learned(
     }
     if include_test:
         test = dataset.split("test")
-        result["test"] = metrics.evaluate(
-            test, model.predict(scaler.transform(test[columns].to_numpy(dtype=float))))
+        test_pred = model.predict(scaler.transform(test[columns].to_numpy(dtype=float)))
+        result["test"] = metrics.evaluate(test, test_pred)
         result["test_persistence"] = metrics.evaluate(
             test, baselines.persistence_predict(test))
+        result["test_predictions"] = {
+            "y_true": test["y_mib"].tolist(),
+            "y_pred": [float(v) for v in test_pred],
+            "workload": test["workload"].tolist(),
+        }
 
     importances = getattr(model, "feature_importances_", None)
     if importances is not None:
@@ -132,6 +137,12 @@ def eval_baseline(dataset: LoadedDataset, model_name: str, config: dict,
               "params": {"percentile": percentile} if model_name == "heuristic" else {},
               "val": metrics.evaluate(dataset.split("val"), predict(dataset.split("val")))}
     if include_test:
-        result["test"] = metrics.evaluate(dataset.split("test"),
-                                          predict(dataset.split("test")))
+        test = dataset.split("test")
+        test_pred = predict(test)
+        result["test"] = metrics.evaluate(test, test_pred)
+        result["test_predictions"] = {
+            "y_true": test["y_mib"].tolist(),
+            "y_pred": [float(v) for v in test_pred],
+            "workload": test["workload"].tolist(),
+        }
     return result
